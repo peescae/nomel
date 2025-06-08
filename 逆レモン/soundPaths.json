@@ -1,0 +1,10 @@
+{
+    "コイントス": "./sound/maou_se_system48.wav"
+    , "勝利": "./sound/maou_se_onepoint05.wav"
+    , "敗北": "./sound/maou_se_system20.wav"
+    , "野営": "./sound/maou_se_system41.wav"
+    , "警告": "./sound/maou_se_8bit10.wav"
+    , "夜明け": "./sound/maou_se_system40.wav"
+    , "NG": "./sound/maou_se_onepoint14.wav"
+    , "加入": "./sound/maou_se_voice_dog02.wav"
+}
