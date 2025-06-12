@@ -11,72 +11,91 @@
         <div id="game-container">
             <h1>逆レモン VS ミルおじ</h1>
 
-            <!-- 音量調節スライダーの追加 -->
-            <div id="volume-controls" style="text-align: center; margin-bottom: 10px;">
-                <div style="display: inline-block; margin: 0 10px;">
-                    <label for="music-volume" style="color: #61dafb;">音楽:</label>
-                    <input type="range" id="music-volume" min="0" max="10" value="7" step="1" style="width: 120px;">
+            <!-- New left column container -->
+            <div class="left-column">
+                <!-- プレイヤーの生い立ち画像とコントロールをまとめるコンテナ -->
+                <div id="life-and-controls-container">
+                    <img id="player-life-image" src="" alt="プレイヤーの生い立ち" class="player-life-image" style="display: none;">
+
+                    <div class="controls-and-seed-wrapper">
+                        <!-- 音量調節スライダーの追加 -->
+                        <div id="volume-controls">
+                            <div style="display: inline-block; margin: 0 10px;">
+                                <label for="music-volume" style="color: #61dafb;">音楽:</label>
+                                <input type="range" id="music-volume" min="0" max="10" value="7" step="1" style="width: 120px;">
+                            </div>
+                            <div style="display: inline-block; margin: 0 10px;">
+                                <label for="sfx-volume" style="color: #61dafb;">効果音:</label>
+                                <input type="range" id="sfx-volume" min="0" max="10" value="7" step="1" style="width: 120px;">
+                            </div>
+                            <!-- 硬貨表示切り替えボタンの追加 -->
+                            <div style="display: inline-block; margin: 0 5px; font-size: 0.8em;">
+                                <button id="toggle-coin-display-button" class="action-button">硬貨ON/OFF</button>
+                            </div>
+                        </div>
+
+                        <div id="seed-info-area">
+                            <p>使用中のシード値: <span id="seed-display"></span></p>
+                        </div>
+                    </div>
                 </div>
-                <div style="display: inline-block; margin: 0 10px;">
-                    <label for="sfx-volume" style="color: #61dafb;">効果音:</label>
-                    <input type="range" id="sfx-volume" min="0" max="10" value="7" step="1" style="width: 120px;">
+
+                <div id="game-messages">
+                    <p>
+                        <strong>ダン・セーウケ王国</strong>の<strong>ショーター王子</strong>が誘拐されちゃった！<br/>
+                        王子は屈強なモン娘がひしめく<strong>逆レモン連邦</strong>のどこかに囚われているらしいよ！<br/>
+                        王様は、王子を救出した者に<strong>100億円</strong>の報奨金を授けると発表したよ！<br/>
+                        王子がモン娘に食べられちゃう前に救い出そう！<br/>
+                        がんばれ！　まけるな！　<strong>こくまろミルク製造おじさん</strong>！
+                    </p>
+                </div>
+
+                <div id="game-info">
+                    <p><span id="days-display">0</span>日目</p>
+                    <p>ミルク: <span id="milk-display">3</span></p>
+                    <p>食料: <span id="food-display">100</span></p>
+                    <p>現在の地形: <span id="current-area-display"></span> <span id="current-area-coins-display"></span></p>
+                </div>
+
+                <div id="favour"></div>
+
+                <div id="initial-setup-area" style="text-align: center; margin-bottom: 15px;">
+                    <div class="seed-input-area">
+                        <label for="seed-input">シード値 (空欄でランダム):</label>
+                        <input type="text" id="seed-input" placeholder="例: myadventure123">
+                    </div>
+                    <button id="start-game-button" class="action-button">ゲーム開始</button>
+                </div>
+
+                <div id="action-area">
                 </div>
             </div>
 
-            <div id="seed-info-area" style="text-align: center; font-size: 0.8em; color: #bbbbbb; margin-top: 1px;">
-                <p>使用中のシード値: <span id="seed-display"></span></p>
+            <!-- New right column container -->
+            <div class="right-column">
+                <div id="party-info">
+                    <!-- 仲間のモン娘の食費合計を表示するように変更 -->
+                    <h2>仲間のモン娘 (食費/日: <span id="party-size-display">0</span>)</h2>
+                    <!-- この中にモン娘リストを入れ、スクロールを制御 -->
+                    <div id="party-list-container">
+                        <ul id="party-list">
+                            <!-- モン娘カードがここに追加されます -->
+                            <li class="empty-slot"></li>
+                            <li class="empty-slot"></li>
+                            <li class="empty-slot"></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-
-            <div id="game-messages">
-                <p>
-                    <strong>ダン・セーウケ王国</strong>の<strong>ショーター王子</strong>が誘拐されてしまった！<br/>
-                    王子は屈強なモン娘がひしめく<strong>逆レモン連邦</strong>のどこかに囚われているらしい！<br/>
-                    王様は、王子を救出した者に<strong>100億円</strong>の報奨金を授けるとお触れを出した！<br/>
-                    王子がモン娘に食べられちゃう前に、なんとしてでも救い出すのだ！<br/>
-                    がんばれ！　まけるな！　<strong>こくまろミルク製造おじさん</strong>！　お前がやらねば誰がやる！
-                </p>
-            </div>
-
-            <div id="game-info">
-                <p><span id="days-display">0</span>日目</p>
-                <p>ミルク: <span id="milk-display">3</span></p>
-                <p>食料: <span id="food-display">100</span></p>
-                <p>現在の地形: <span id="current-area-display"></span> <span id="current-area-coins-display"></span></p>
-            </div>
-
-            <div id="favour"></div>
 
             <div id="coin-animation-area"></div>
-
-            <div id="initial-setup-area" style="text-align: center; margin-bottom: 15px;">
-                <div class="seed-input-area">
-                    <label for="seed-input">シード値 (空欄でランダム):</label>
-                    <input type="text" id="seed-input" placeholder="例: myadventure123">
-                </div>
-                <button id="start-game-button" class="action-button">ゲーム開始</button>
-            </div>
-
-            <div id="action-area">
-            </div>
-
-            <div id="party-info">
-                <!-- 仲間のモン娘の維持費合計を表示するように変更 -->
-                <h2>仲間のモン娘 (食費/日: <span id="party-size-display">0</span>)</h2>
-                <!-- この中にモン娘リストを入れ、スクロールを制御 -->
-                <div id="party-list-container">
-                    <ul id="party-list">
-                        <!-- モン娘カードがここに追加されます -->
-                        <li class="empty-slot"></li>
-                        <li class="empty-slot"></li>
-                        <li class="empty-slot"></li>
-                    </ul>
-                </div>
-            </div>
         </div>
 
         <!-- ホムンクルス画像とヘルプボタン -->
         <div id="homunculus-container">
+            <img id="left-alchemy-image" src="" alt="錬金術師" class="alchemy-image" style="display: none;">
             <img id="homunculus-image" src="" alt="ホムンクルス" title="クリックしてヘルプを表示">
+            <img id="right-alchemy-image" src="" alt="錬金術師" class="alchemy-image" style="display: none;">
         </div>
 
         <!-- ヘルプウィンドウのオーバーレイ -->
@@ -93,10 +112,11 @@
 
                     <h4>冒険の流れ</h4>
                     <ol>
-                        <li><strong>ゲーム開始:</strong> 仲間にするモン娘を選ぼう！　最初は最大3人まで仲間にできるよ。</li>
+                        <li><strong>ゲーム開始:</strong> おじさんのミルクを対価に、モン娘を勧誘しよう！</li>
                         <li><strong>探索エリア選択:</strong> 毎日、探索する地形を選ぶよ。</li>
                         <li><strong>探索派遣:</strong> 探索に派遣するモン娘を選ぶよ。地形の属性と一致するモン娘を派遣すると、沢山の食料を獲得できるよ！</li>
-                        <li><strong>襲撃:</strong> キャンプに残ったモン娘達で、敵の襲撃を迎え撃とう！　勝利すると敵モン娘を勧誘できるよ！　敗走すると食料が全て無くなるから気を付けて！</li>
+                        <li><strong>襲撃:</strong> キャンプに残ったモン娘達で、敵の襲撃を迎え撃とう！</li>
+                        <li><strong>イベント:</strong> 冒険の仲間が増えたり、神の寵愛を得られるかも？</li>
                         <li><strong>野営:</strong> 探索で得た食料と、モン娘の食費、襲撃時の戦闘手当を精算するよ。食料が尽きると冒険はおしまいだけど、おじさんのミルクで補填できるよ。</li>
                         <li><strong>次の日へ:</strong> 日数が進むほど地形の属性が増えて、敵も強くなっていくよ！</li>
                     </ol>
@@ -104,32 +124,55 @@
                     <h4>戦闘（コイントス）について</h4>
                     <ul>
                         <li>戦闘では、モン娘達が持つ硬貨を一斉にコイントスするよ。</li>
-                        <li>地形の硬貨属性とモン娘の硬貨属性が一致すると、その硬貨は必ず「表」になるよ！</li>
                         <li>「表」の硬貨の枚数が、そのままモン娘の戦力値になるよ。</li>
-                        <li>特定の硬貨には特殊効果があるよ！（例: 「魔」の硬貨の総数が相手より多いと、味方全体の「魔」硬貨が必ず表になる）</li>
                         <li>味方の総戦力値 ≧ 敵の総戦力値 なら、おじさんの勝ち！</li>
+                        <li>地形の硬貨属性とモン娘の硬貨属性が一致すると、その硬貨は必ず「表」になるよ！</li>
+                        <li>特定の硬貨には特殊効果があるよ！（例: 「魔」の硬貨の総数が相手より多いと、味方全体の「魔」硬貨が必ず表になる）</li>
                         <li>コイントスは最大3回行えるけど、コイントスの度に戦闘手当として食料が差し引かれるよ。</li>
                         <li>3回のコイントスで敵に勝てなかった場合、おじさんの負けになっちゃうよ！</li>
+                    </ul>
+
+                    <h4>襲撃について</h4>
+                    <ul>
+                        <li>勝利すると、おじさんのミルクを対価に敵モン娘を勧誘できるよ！</li>
                         <li>敗北すると、全ての食料をその場に残して撤退することになるんだ。気を付けよう！</li>
+                    </ul>
+
+                    <h4>特殊襲撃について</h4>
+                    <ul>
+                        <li>稀に凶暴なモン娘が襲ってくるよ！</li>
+                        <li>かなり凶暴だから、勝っても仲間に加え入れることはできないよ。</li>
+                        <li>代わりに彼女達が持っている食料を頂こう！</li>
+                    </ul>
+
+                    <h4>決闘について</h4>
+                    <ul>
+                        <li>稀に1対1の決闘を申し込んでくるよ！</li>
+                        <li>仲間の中からひとり選んで、相手をしてあげよう。</li>
+                        <li>勝てば無条件で相手を仲間に加えることができるよ！</li>
+                        <li>負けても食料は取られないけど、代わりにおじさんのミルクを搾り取られちゃうよ。</li>
                     </ul>
 
                     <h4>ボス戦について</h4>
                     <ul>
                         <li><strong>10日目</strong>に到達する関所と、<strong>20日目</strong>に到達する中枢ではボス戦が待ってるよ！</li>
                         <li>とても強いモン娘達との3連戦が始まるよ！</li>
-                        <li>一度戦ったモン娘は、そのボス戦中は再び戦いに参加出来ないから、戦力の配分には気を付けて。</li>
+                        <li>一度戦ったモン娘は、そのボス戦中は再度戦いに参加出来ないから、戦力の配分には気を付けて。</li>
                         <li>一度でも負ければ、おじさんの冒険はそこで終了だ！</li>
                     </ul>
 
                     <h4>資源管理</h4>
                     <ul>
-                        <li><strong>食料:</strong> 探索で獲得し、モン娘の維持費や戦闘手当で消費するよ。食料が尽きると冒険はそこでおしまい！</li>
                         <li><strong>ミルク:</strong> 毎日1杯生産されて、食料が尽きた際の補填や、モン娘の勧誘で消費するよ。</li>
+                        <li><strong>食料:</strong> 探索で獲得し、モン娘の食費や戦闘手当で消費するよ。食料が尽きると冒険はそこでおしまい！</li>
+                        <li><strong>ひとりあたりの食料調達量:</strong> ３ ＋ 地形と一致している硬貨の枚数 × ３</li>
+                        <li><strong>ひとりあたりの戦闘手当:</strong> モン娘が所持している硬貨の枚数 × コイントスの回数</li>
+                        <li><strong>ひとりあたりの食費/日:</strong> モン娘が所持している硬貨の枚数</li>
                     </ul>
 
                     <h4>神の寵愛</h4>
                     <ul>
-                        <li>たまに神様から寵愛を授かることがあるよ。</li>
+                        <li>稀に神様から寵愛を授かることがあるよ。</li>
                         <li>授かった硬貨は、その硬貨を持つ仲間の戦力値を加算するよ。</li>
                     </ul>
 
@@ -149,6 +192,7 @@
                     <h4>利用素材</h4>
                     <ul>
                         <li><strong>魔王魂</strong> https://maou.audio/</li>
+                        <li><strong>Game-icons.net</strong> https://game-icons.net/</li>
                     </ul>
                 </div>
                 <button id="help-modal-close-button" class="modal-close-button">閉じる</button>

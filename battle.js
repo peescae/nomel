@@ -8,11 +8,11 @@ import {
     waitForButtonClick,
     clearActionArea,
     showCombatLogModal,
-    getCoinAttributeName
+    getCoinAttributeName,
+    createButtons
 } from './uiManager.js';
 import { coinAttributesMap, GAME_CONSTANTS } from './data.js';
 import { playSfx } from './musicManager.js'; // playSfxをインポート
-
 
 /**
  * 戦闘を処理する関数。ボス戦と通常戦闘の両方に対応。
@@ -21,25 +21,12 @@ import { playSfx } from './musicManager.js'; // playSfxをインポート
  * @param {Monster[]} enemies - 敵のモン娘配列。
  * @param {Function} random - 疑似乱数生成関数。
  * @param {object} currentArea - 現在の地形情報。
- * @param {boolean} isBossBattle - ボス戦かどうかを示すフラグ。
+ * @param {String} battleType - 戦闘の種類。
  * @returns {Promise<object>} 戦闘結果 (won: boolean)。
  */
-export async function conductFight(game, party, enemies, random, currentArea, isBossBattle = false) {
+export async function conductFight(game, party, enemies, random, currentArea, battleType) {
     let selectedPartyMonsters = [];
     let currentFightFoodAllowance;
-
-    // soundPaths.json から効果音のパスを読み込む
-    let soundPaths;
-    try {
-        const response = await fetch('./soundPaths.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        soundPaths = await response.json();
-    } catch (error) {
-        console.error("soundPaths.json の読み込み中にエラーが発生しました:", error);
-        // 効果音の読み込みに失敗してもアニメーションは続行
-    }
 
     // game.jsで定義されている createCoinTooltipHtml を battle.js でも使用できるように定義
     // uiManager.jsのgetCoinAttributeNameとcoinAttributesMapを使用
@@ -49,42 +36,57 @@ export async function conductFight(game, party, enemies, random, currentArea, is
         return `<span class="coin-tooltip-target" data-coin-id="${coinId}" onmouseover="window.showCoinTooltip(event, '${coinId}', window.coinAttributesMap)" onmouseout="window.hideCoinTooltip()">${styledCoinHtml}</span>`;
     };
 
-    if (isBossBattle) {
-        // ボス戦では、現在使用可能なモン娘のみを選択肢として提示
-        const availableMonsters = party.filter(m => !m.hasBeenSentToBattle);
-        if (availableMonsters.length === 0) {
-            return { won: false, foodGain: 0, milkGain: 0 };
-        }
+    switch (battleType) {
+        case 'boss':
+            // ボス戦では、現在使用可能なモン娘のみを選択肢として提示
+            const availableMonstersBoss = party.filter(m => !m.hasBeenSentToBattle);
 
-        // ここに敵モン娘の情報を表示する処理を追加
-        logMessage("対戦相手の情報:");
-        enemies.forEach(enemy => {
-            const enemyCoinHtml = enemy.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap)).join(' ');
-            logMessage(`- <span class="monster-name-color">${enemy.name}</span> ( ${enemyCoinHtml} )`);
-        });
-        logMessage("上記の敵を相手に戦うモン娘を選んでください！");
+            // ここに敵モン娘の情報を表示する処理を追加
+            logMessage("対戦相手の情報:");
+            enemies.forEach(enemy => {
+                const enemyCoinHtml = enemy.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap)).join(' ');
+                logMessage(`- <span class="monster-name-color">${enemy.name}</span> ( ${enemyCoinHtml} )`);
+            });
+            logMessage("戦わせるモン娘を選んでね！");
 
-        selectedPartyMonsters = await selectBattleParty(game, availableMonsters); // gameオブジェクトを渡す
-        if (selectedPartyMonsters.length === 0) {
-            logMessage("モン娘が選択されませんでした。戦闘を回避します。");
-            return { won: false, foodGain: 0, milkGain: 0 };
-        }
-        // 派遣されたモン娘にhasBeenSentToBattleフラグを立てる
-        selectedPartyMonsters.forEach(m => {
-            m.hasBeenSentToBattle = true;
-        });
-    } else {
-        selectedPartyMonsters = party; // 通常の探索戦闘では全員参加
+            selectedPartyMonsters = await selectBattleParty(game, availableMonstersBoss, battleType);
+
+            // 派遣されたモン娘にhasBeenSentToBattleフラグを立てる
+            selectedPartyMonsters.forEach(m => {
+                m.hasBeenSentToBattle = true;
+            });
+            break;
+
+        case 'duel':
+            // 決闘では、プレイヤーは仲間モン娘の中から一人選択して戦わせる
+            // enemiesには常に1体の敵が渡される想定
+            const availableMonstersDuel = party; // 決闘では全員選択可能
+
+            logMessage("あの娘と決闘させるモン娘を一人選んでね。");
+
+            // 決闘では1体のみ選択
+            selectedPartyMonsters = await selectBattleParty(game, availableMonstersDuel, battleType);
+
+            // 全てのパーティメンバーのhasBeenSentToBattleフラグをリセット
+            game.party.forEach(monster => monster.hasBeenSentToBattle = false);
+            break;
+
+        default:
+            selectedPartyMonsters = party; // 通常の探索戦闘では全員参加
     }
 
     // 戦闘ログを一時的に保持する配列
     const combatLogMessages = [];
+    // 敵モン娘の画像パスを保持する配列
+    const enemyImagePaths = [];
 
     // 戦闘開始メッセージ
     combatLogMessages.push(`<h3>戦闘開始！</h3>`);
     enemies.forEach(enemyMonster => {
         const enemyCoinHtml = enemyMonster.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap)).join(' ');
         combatLogMessages.push(`<p>敵: <span class="monster-name-color">${enemyMonster.name}</span> ( ${enemyCoinHtml} )</p>`);
+        // 敵モン娘の画像パスを追加
+        enemyImagePaths.push(enemyMonster.name);
     });
 
     const partyList = document.getElementById('party-list');
@@ -95,15 +97,21 @@ export async function conductFight(game, party, enemies, random, currentArea, is
         }
     });
 
-    let fightAttempts = 0;
-    combatLogMessages.push(`<p>コイントスで撃退しましょう！<br>**${GAME_CONSTANTS.RAID_MAX_ATTEMPTS}回まで**コイントスに挑戦できます。</p>`);
+    let maxFightAttempts = GAME_CONSTANTS.RAID_MAX_ATTEMPTS;
+    if (game.playerLife.name === '軍人') {
+        maxFightAttempts++;
+    }
 
-    // 初回のポップアップ表示
-    await showCombatLogModal(`戦闘ログ コイントス(${fightAttempts + 1}回目)`, combatLogMessages.join(''), 'コイントス開始');
+    let fightAttempts = 0;
+    combatLogMessages.push(`<p>**${maxFightAttempts}回まで**コイントスできるよ。</p>`);
+
+    // 初回のポップアップ表示時に敵の画像パスを渡す
+    await showCombatLogModal(`戦闘ログ コイントス(${fightAttempts + 1}回目)`, combatLogMessages.join(''), enemyImagePaths, 'コイントス開始');
     combatLogMessages.length = 0; // ポップアップ表示後、ログをクリア
 
     let wins = 0;
-    while (fightAttempts < GAME_CONSTANTS.RAID_MAX_ATTEMPTS) {
+
+    while (fightAttempts < maxFightAttempts) {
         await playCoinTossAnimation(random);
         fightAttempts++;
 
@@ -179,11 +187,11 @@ export async function conductFight(game, party, enemies, random, currentArea, is
 
         if (partyMagicCoins.length > enemyMagicCoins.length) {
             partyMagicCoins.forEach(coin => coin.isHead = true);
-            combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('magic', coinAttributesMap)}の力が敵を上回り、全ての魔の硬貨が表になりました！</p>`);
+            combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('magic', coinAttributesMap)}の力が敵を上回り、全ての魔の硬貨が表になった！</p>`);
         }
         if (partyMagicCoins.length < enemyMagicCoins.length) {
             enemyMagicCoins.forEach(coin => coin.isHead = true);
-            combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('magic', coinAttributesMap)}の力が味方を上回り、全ての魔の硬貨が表になりました！</p>`);
+            combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('magic', coinAttributesMap)}の力が味方を上回り、全ての魔の硬貨が表になった！</p>`);
         }
 
         partyIndividualCombatPowers.push(...partyCoinOutcomes.map(mOutcome => {
@@ -207,7 +215,10 @@ export async function conductFight(game, party, enemies, random, currentArea, is
         }));
 
         // 神の寵愛を戦力値に加算
-        applyFavourEffectsToIndividualMonsters(game, partyIndividualCombatPowers, coinAttributesMap);
+        applyFavourEffectsToIndividualMonsters(game, partyIndividualCombatPowers);
+
+        // 罠の硬貨を戦力値に減算
+        calcTrapCoinPower(selectedPartyMonsters, enemyIndividualCombatPowers, coinAttributesMap, combatLogMessages, battleType);
 
         // 漁、弓、毒、雷、火の硬貨の特殊効果 (味方側)
         let partyFishingHeads = partyCoinOutcomes.flatMap(m => m.outcomes).filter(c => c.type === 'fishing' && c.isHead).length;
@@ -220,7 +231,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             for (const e of enemyIndividualCombatPowers) {
                 if (e.originalOutcomes.some(o => o.type === 'water')) {
                     e.power = Math.max(0, e.power - partyFishingHeads);
-                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('fishing', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('water', coinAttributesMap)}硬貨持ち)の戦力値が ${partyFishingHeads} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('fishing', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('water', coinAttributesMap)}硬貨持ち)の戦力値が ${partyFishingHeads} 減少！</p>`);
                 }
             }
         }
@@ -228,7 +239,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             for (const e of enemyIndividualCombatPowers) {
                 if (e.originalOutcomes.some(o => o.type === 'sky')) {
                     e.power = Math.max(0, e.power - partyBowHeads);
-                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('bow', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('sky', coinAttributesMap)}硬貨持ち)の戦力値が ${partyBowHeads} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('bow', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('sky', coinAttributesMap)}硬貨持ち)の戦力値が ${partyBowHeads} 減少！</p>`);
                 }
             }
         }
@@ -236,7 +247,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             for (const e of enemyIndividualCombatPowers) {
                 if (!e.originalOutcomes.some(o => o.type === 'poison')) {
                     e.power = Math.max(0, e.power - partyPoisonHeads);
-                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('poison', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('poison', coinAttributesMap)}硬貨なし)の戦力値が ${partyPoisonHeads} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('poison', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('poison', coinAttributesMap)}硬貨なし)の戦力値が ${partyPoisonHeads} 減少！</p>`);
                 }
             }
         }
@@ -244,7 +255,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             for (const e of enemyIndividualCombatPowers) {
                 if (!e.originalOutcomes.some(o => o.type === 'thunder')) {
                     e.power = Math.max(0, e.power - partyThunderHeads);
-                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('thunder', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('thunder', coinAttributesMap)}硬貨なし)の戦力値が ${partyThunderHeads} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('thunder', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('thunder', coinAttributesMap)}硬貨なし)の戦力値が ${partyThunderHeads} 減少！</p>`);
                 }
             }
         }
@@ -252,7 +263,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             for (const e of enemyIndividualCombatPowers) {
                 if (!e.originalOutcomes.some(o => o.type === 'fire')) {
                     e.power = Math.max(0, e.power - partyFireHeads);
-                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('fire', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('fire', coinAttributesMap)}硬貨なし)の戦力値が ${partyFireHeads} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('fire', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('fire', coinAttributesMap)}硬貨なし)の戦力値が ${partyFireHeads} 減少！</p>`);
                 }
             }
         }
@@ -268,7 +279,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             for (const p of partyIndividualCombatPowers) {
                 if (p.originalOutcomes.some(o => o.type === 'water')) {
                     p.power = Math.max(0, p.power - enemyFishingHeads);
-                    combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('fishing', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('water', coinAttributesMap)}硬貨持ち)の戦力値が ${enemyFishingHeads} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('fishing', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('water', coinAttributesMap)}硬貨持ち)の戦力値が ${enemyFishingHeads} 減少！</p>`);
                 }
             }
         }
@@ -276,7 +287,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             for (const p of partyIndividualCombatPowers) {
                 if (p.originalOutcomes.some(o => o.type === 'sky')) {
                     p.power = Math.max(0, p.power - enemyBowHeads);
-                    combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('bow', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('sky', coinAttributesMap)}硬貨持ち)の戦力値が ${enemyBowHeads} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('bow', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('sky', coinAttributesMap)}硬貨持ち)の戦力値が ${enemyBowHeads} 減少！</p>`);
                 }
             }
         }
@@ -284,7 +295,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             for (const p of partyIndividualCombatPowers) {
                 if (!p.originalOutcomes.some(o => o.type === 'poison')) {
                     p.power = Math.max(0, p.power - enemyPoisonHeads);
-                    combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('poison', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('poison', coinAttributesMap)}硬貨なし)の戦力値が ${enemyPoisonHeads} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('poison', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('poison', coinAttributesMap)}硬貨なし)の戦力値が ${enemyPoisonHeads} 減少！</p>`);
                 }
             }
         }
@@ -292,7 +303,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             for (const p of partyIndividualCombatPowers) {
                 if (!p.originalOutcomes.some(o => o.type === 'thunder')) {
                     p.power = Math.max(0, p.power - enemyThunderHeads);
-                    combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('thunder', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('thunder', coinAttributesMap)}硬貨なし)の戦力値が ${enemyThunderHeads} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('thunder', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('thunder', coinAttributesMap)}硬貨なし)の戦力値が ${enemyThunderHeads} 減少！</p>`);
                 }
             }
         }
@@ -300,7 +311,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             for (const p of partyIndividualCombatPowers) {
                 if (!p.originalOutcomes.some(o => o.type === 'fire')) {
                     p.power = Math.max(0, p.power - enemyFireHeads);
-                    combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('fire', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('fire', coinAttributesMap)}硬貨なし)の戦力値が ${enemyFireHeads} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('fire', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('fire', coinAttributesMap)}硬貨なし)の戦力値が ${enemyFireHeads} 減少！</p>`);
                 }
             }
         }
@@ -322,11 +333,16 @@ export async function conductFight(game, party, enemies, random, currentArea, is
         currentFightFoodAllowance = selectedPartyMonsters.reduce((sum, monster) => sum + monster.totalCoins, 0) * fightAttempts;
 
         // 血の硬貨の特殊効果 (戦闘手当減少)
-        const bloodAmounts = partyCoinOutcomes.flatMap(m => m.outcomes).filter(c => c.type === 'blood').length;
-        if (bloodAmounts > 0) {
-            currentFightFoodAllowance = Math.max(0, currentFightFoodAllowance - bloodAmounts);
-            combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('blood', coinAttributesMap)}の力で、戦闘手当が ${bloodAmounts} 減少しました！ (現在の手当: ${currentFightFoodAllowance})</p>`);
-        }
+        // 血の硬貨で表を出したモン娘の戦闘手当をゼロにする
+        partyCoinOutcomes.forEach(mOutcome => {
+            if (mOutcome.outcomes.some(c => c.type === 'blood' && c.isHead)) {
+                // 血の硬貨が表の場合、このモン娘の戦闘手当を0にする
+                currentFightFoodAllowance -= mOutcome.monster.totalCoins * fightAttempts;
+                currentFightFoodAllowance = Math.max(0, currentFightFoodAllowance); // 0を下回らないようにする
+                combatLogMessages.push(`<p>味方${createCoinTooltipHtml('blood', coinAttributesMap)}の力で、<span class="monster-name-color">${mOutcome.monster.name}</span> の戦闘手当がゼロになった！</p>`);
+            }
+        });
+
 
         // 花の硬貨の特殊効果 (戦闘手当減少)
         const flowerHeads = partyCoinOutcomes.flatMap(m => m.outcomes).filter(c => c.type === 'flower' && c.isHead).length;
@@ -339,7 +355,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
         }
 
         // 総戦闘手当の保持
-        game.battleAllowance = currentFightFoodAllowance;
+        game.battleAllowance += currentFightFoodAllowance;
 
         // 総戦力値の比較
         combatLogMessages.push(`<p>味方総戦力値: ${partyActualCombatPower}, 敵総戦力値: ${enemyActualCombatPower}</p>`);
@@ -348,19 +364,15 @@ export async function conductFight(game, party, enemies, random, currentArea, is
             combatLogMessages.push("<p><strong>勝利！</strong></p>");
             wins++; // 勝利カウントを増やす
 
-            if (soundPaths && soundPaths["勝利"]) {
-                playSfx(soundPaths["勝利"]).catch(e => console.error("勝利の効果音の再生に失敗しました:", e));
-            }
+            playSfx("勝利").catch(e => console.error("勝利の効果音の再生に失敗しました:", e));
         } else {
             combatLogMessages.push("<p><strong>敗北。</strong></p>");
 
-            if (soundPaths && soundPaths["敗北"]) {
-                playSfx(soundPaths["敗北"]).catch(e => console.error("敗北の効果音の再生に失敗しました:", e));
-            }
+            playSfx("敗北").catch(e => console.error("敗北の効果音の再生に失敗しました:", e));
         }
 
         // 戦闘ログポップアップを表示し、ユーザーが閉じるのを待つ
-        await showCombatLogModal(`戦闘ログ コイントス(${fightAttempts}回目)`, combatLogMessages.join(''), '閉じる');
+        await showCombatLogModal(`戦闘ログ コイントス(${fightAttempts}回目)`, combatLogMessages.join(''), enemyImagePaths, '閉じる');
         combatLogMessages.length = 0; // ポップアップ表示後、ログをクリア
 
         if (wins >= 1) {
@@ -385,6 +397,9 @@ export async function conductFight(game, party, enemies, random, currentArea, is
         const actionArea = document.getElementById('action-area');
         if (actionArea) actionArea.innerHTML = '<button data-value="gameover-confirm">負けちゃった</button>';
         await waitForButtonClick();
+
+        playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+
         // スタイルを解除
         selectedPartyMonsters.forEach(monster => {
             const li = partyList ? partyList.querySelector(`li[data-index="${game.party.indexOf(monster)}"]`) : null;
@@ -392,6 +407,7 @@ export async function conductFight(game, party, enemies, random, currentArea, is
                 li.classList.remove('resting-in-raid');
             }
         });
+
         return { won: false, foodGain: 0, milkGain: 0 };
     }
 }
@@ -399,11 +415,9 @@ export async function conductFight(game, party, enemies, random, currentArea, is
 /**
  * 神の寵愛 (favour) の効果を適用し、戦闘に参加した個々のモン娘の戦力値に加算する。
  * @param {object} game - ゲームの状態オブジェクト。
- * @param {Array<Object>} partyIndividualCombatPowers - 戦闘に参加しているモン娘とその個別戦力値の配列。
- * 各要素は { monster: Monsterインスタンス, currentMonsterPower: number } の形式を想定。
- * @param {object} coinAttributesMap - 硬貨属性のマップ。
+ * @param {Array<object>} partyIndividualCombatPowers - 戦闘に参加しているモン娘とその個別戦力値の配列。
  */
-function applyFavourEffectsToIndividualMonsters(game, partyIndividualCombatPowers, coinAttributesMap) {
+function applyFavourEffectsToIndividualMonsters(game, partyIndividualCombatPowers) {
     if (!game.favour || game.favour.length === 0) {
         return; // 神の寵愛がない場合は何もしない
     }
@@ -421,16 +435,56 @@ function applyFavourEffectsToIndividualMonsters(game, partyIndividualCombatPower
 }
 
 /**
+ * 罠の効果を反映し、戦闘に参加した個々のモン娘の戦力値に減算する。
+ * @param {Monster[]} partyIndividualCombatPowers - 戦闘に参加しているモン娘とその個別戦力値の配列。
+ * @param {Array<object>} enemyIndividualCombatPowers - 戦闘に参加している敵モン娘とその個別戦力値の配列。
+ * @param {object[]} coinAttributesMap - 硬貨属性のマップ。
+ * @param {string[]} combatLogMessages - 戦闘ログメッセージを格納する配列。
+ * @param {string} battleType - 戦闘の種類。
+ */
+function calcTrapCoinPower(partyIndividualCombatPowers, enemyIndividualCombatPowers, coinAttributesMap, combatLogMessages, battleType) {
+    if (battleType === 'normal' || battleType === 'special') {
+        // 通常襲撃、または特殊襲撃でない場合は何もしない
+
+        let trapCoinCount = 0;
+        // 仲間モン娘が持つ'trap'属性の硬貨の総数を数える
+        partyIndividualCombatPowers.forEach(p => {
+            p.coinAttributes.forEach(coinAttr => {
+                if (coinAttr === 'trap') {
+                    trapCoinCount++;
+                }
+            });
+        });
+
+        if (trapCoinCount > 0) {
+            // 'trap'硬貨の枚数分、敵モン娘の戦力値(power)を減算
+            enemyIndividualCombatPowers.forEach(e => {
+                const originalPower = e.power;
+                e.power = Math.max(0, e.power - trapCoinCount);
+                if (originalPower !== e.power) {
+                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('trap', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」の戦力値が ${trapCoinCount} 減少しました！</p>`);
+                }
+            });
+        }
+    }
+}
+
+/**
  * ボス戦に派遣する仲間モン娘を選択するフェーズ。
  * @param {object} game - 現在のゲーム状態オブジェクト。
  * @param {Monster[]} availableMonsters - 今回の戦闘で選択可能なモン娘の配列。
+ * @param {String} battleType - 戦闘の種類。
  * @returns {Promise<Monster[]>} 選択されたモン娘の配列。
  */
-async function selectBattleParty(game, availableMonsters) {
+async function selectBattleParty(game, availableMonsters, battleType) {
     game.currentPhase = 'bossExpeditionSelection'; // ボス戦専用のフェーズ名を使用
     const selectedParty = [];
 
-    logMessage("仲間モン娘の枠をクリックして派遣/待機を切り替えます。");
+    if (battleType === 'duel') {
+        logMessage("仲間モン娘の枠をクリックして決闘相手を選択してね。");
+    } else {
+        logMessage("仲間モン娘の枠をクリックして派遣/待機を切り替えてね。");
+    }
 
     const partyList = document.getElementById('party-list');
     // UIを更新して、選択可能なモン娘と使用済みのモン娘を区別して表示
@@ -451,16 +505,22 @@ async function selectBattleParty(game, availableMonsters) {
                 const monster = game.party[index]; // game.party から元のモンスターを取得
 
                 // 選択可能なモンスターリストに含まれているかチェック
-                if (!availableMonsters.includes(monster) || monster.hasBeenSentToBattle) {
+                if (!availableMonsters.includes(monster)) {
                     return; // 選択不可なモンスターは無視
                 }
 
                 if (selectedParty.includes(monster)) {
                     selectedParty.splice(selectedParty.indexOf(monster), 1);
                 } else {
+                    if (battleType === 'duel' && selectedParty.length >= 1) {
+                        // 決闘で既に1体選択されている場合、新しいモンスターを選択したら古いものを置き換える
+                        selectedParty.pop();
+                    }
                     selectedParty.push(monster);
                 }
-                // UIを即時更新
+
+                playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+
                 updateUI(game, coinAttributesMap, selectedParty, game.currentArea, true, availableMonsters, GAME_CONSTANTS.MAX_PARTY_SIZE);
             }
         };
@@ -469,7 +529,7 @@ async function selectBattleParty(game, availableMonsters) {
             let clickedButton = event.target.closest('button');
             if (clickedButton && clickedButton.dataset.value === 'finish-battle-expedition') {
                 if (selectedParty.length === 0) {
-                    logMessage("最低1体のモン娘を派遣する必要があります。");
+                    logMessage("必ず1人はモン娘を選んで！");
                     return; // 選択されていない場合は再選択を促す
                 }
                 // イベントリスナーを削除

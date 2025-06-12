@@ -1,93 +1,133 @@
+/* style.css */
+
 body {
     font-family: 'Arial', sans-serif;
     background-color: #282c34;
     color: #f8f8f2;
     display: flex;
     justify-content: center;
-    align-items: center;
     min-height: 100vh;
     margin: 0;
-    padding: 8px; /* パディングも少し小さく */
+    padding: 10px;
     box-sizing: border-box;
-    font-size: 1.0em; /* ベースフォントサイズを小さく */
+    font-size: 1.0em;
+    align-items: flex-start; /* 画面上部に固定 */
 }
 
 #game-container {
     background-color: #3b3f47;
     border-radius: 10px;
-    padding: 8px; /* パディングを少し小さく */
+    padding: 10px; /* Increased padding for more space */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     width: 100%;
-    max-width: 800px;
+    max-width: 1920px; /* Adjusted for Full HD landscape */
     display: flex;
-    flex-direction: column;
-    gap: 4px; /* ギャップも少し小さく */
-    position: relative; /* ホムンクルス画像の基準にするため */
+    flex-direction: row; /* Changed to row for horizontal layout */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 10px; /* Increased gap between major sections */
+    position: relative;
+    box-sizing: border-box; /* Include padding in width calculation */
+    align-items: flex-start; /* 子要素を上部に揃える */
 }
 
 h1, h2 {
     color: #61dafb;
     text-align: center;
     margin-top: 0;
-    margin-bottom: 1px;
-    font-size: 1.6em; /* h1のフォントサイズを調整 */
+    margin-bottom: 10px; /* Increased margin-bottom */
+    font-size: 2.0em; /* Larger font size for desktop */
+    width: 100%; /* Ensure titles take full width */
 }
 
 h2 {
-    font-size: 1.2em; /* h2のフォントサイズを調整 */
+    font-size: 1.5em; /* Larger font size for desktop */
 }
 
 h4 {
     color: #a2ff7e;
-    font-size: 1.0em; /* h4のフォントサイズを調整 */
+    font-size: 1.1em; /* Slightly larger font size */
 }
 
 strong {
     color: #ffcb7e;
 }
 
+/* New container for left column elements */
+.left-column {
+    flex: 1; /* Take up available space */
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Gap between elements in left column */
+    min-width: 300px; /* Minimum width for the column */
+}
+
+/* New container for right column elements */
+.right-column {
+    flex: 2; /* Take up more space than left column */
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Gap between elements in right column */
+    min-width: 400px; /* Minimum width for the column */
+}
+
+/* Container for life image and controls */
+#life-and-controls-container {
+    display: flex;
+    align-items: flex-start; /* Align items to the top */
+    gap: 4px; /* Space between image and controls */
+    flex-wrap: wrap; /* Allow wrapping if not enough space */
+    margin-bottom: 4px; /* Add some space below this section */
+}
+
+.controls-and-seed-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Allow it to take up remaining space */
+    gap: 4px; /* Adjust gap between volume and seed info */
+}
 
 #game-info {
-    padding: 4px; /* パディングを調整 */
+    padding: 4px; /* Adjusted padding */
     background-color: #4f535a;
     border-radius: 5px;
     display: flex;
     justify-content: space-around;
-    font-size: 1.0em; /* game-infoのフォントサイズを調整 */
-    flex-wrap: wrap; /* 要素が収まらない場合に折り返す */
-    align-items: center; /* 垂直方向の中央揃え */
+    font-size: 1.0em;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 #game-info p {
-    margin: 2px 2px; /* 各情報間の余白を調整 */
-    white-space: nowrap; /* テキストが改行されないようにする */
+    margin: 4px 8px; /* Adjusted margin */
+    white-space: nowrap;
 }
 
 #favour {
-    padding: 4px 20px;
+    padding: 8px 20px; /* Adjusted padding */
     background-color: #4f535a;
     border-radius: 5px;
     display: flex;
-    font-size: 1.0em; /* game-infoのフォントサイズを調整 */
-    flex-wrap: wrap; /* 要素が収まらない場合に折り返す */
+    font-size: 0.8em;
+    flex-wrap: wrap;
     text-align: left;
     align-items: center;
     vertical-align: middle;
+    gap: 5px;
 }
 
 #game-messages {
     background-color: #4f535a;
     border-radius: 5px;
-    padding: 8px; /* パディングを調整 */
-    min-height: 100px; /* 最小高さを調整 */
-    max-height: 200px; /* 最大高さを調整 */
+    padding: 12px; /* Increased padding */
+    min-height: 150px; /* Increased min-height */
+    max-height: 300px; /* Increased max-height */
     overflow-y: auto;
-    line-height: 1.4; /* 行の高さを調整 */
-    font-size: 0.85em; /* game-messagesのフォントサイズを調整 */
+    line-height: 1.6; /* Increased line-height */
+    font-size: 0.95em; /* Adjusted font size */
 }
 
 #game-messages p {
-    margin: 3px 0;
+    margin: 2px 0; /* Adjusted margin */
 }
 
 #game-messages-days {
@@ -100,69 +140,76 @@ strong {
 
 #action-area {
     text-align: center;
-    padding: 8px; /* パディングを調整 */
-    min-height: 50px; /* 最小高さを調整 */
+    padding: 10px; /* Increased padding */
+    min-height: 80px; /* Increased min-height */
 }
 
 /* Seed Input Area */
 .seed-input-area {
-    margin-bottom: 12px; /* マージンを調整 */
+    margin-bottom: 15px; /* Adjusted margin */
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px; /* ギャップを調整 */
+    gap: 8px; /* Increased gap */
 }
 
 .seed-input-area label {
-    font-size: 0.8em; /* フォントサイズを調整 */
+    font-size: 0.9em; /* Adjusted font size */
     color: #bbbbbb;
 }
 
 .seed-input-area input {
-    padding: 6px; /* パディングを調整 */
-    border-radius: 4px; /* ボーダーラディウスを調整 */
+    padding: 8px; /* Increased padding */
+    border-radius: 4px;
     border: 1px solid #61dafb;
     background-color: #4f535a;
     color: #f8f8f2;
-    width: 140px; /* 幅を調整 */
+    width: 200px; /* Increased width */
     text-align: center;
-    font-size: 0.9em; /* フォントサイズを調整 */
+    font-size: 1.0em; /* Adjusted font size */
 }
 
 .seed-input-area input::placeholder {
     color: #cccccc;
 }
 
-/* シード値表示用の新しいエリア */
+/* Seed Info Area */
 #seed-info-area {
-    text-align: center;
-    font-size: 0.8em; /* フォントサイズを調整 */
-    color: #cccccc; /* 目立たない色 */
-    margin-top: 4px; /* マージンを調整 */
-    padding: 4px; /* パディングを調整 */
-    background-color: #3b3f47; /* 背景色を少し暗くして区別 */
+    text-align: left; /* Adjusted to left */
+    font-size: 0.9em; /* Adjusted font size */
+    color: #cccccc;
+    margin-top: 2px; /* Adjusted margin */
+    margin-left: 20px; /* Adjusted margin */
+    padding: 2px; /* Adjusted padding */
+    background-color: #3b3f47;
     border-radius: 5px;
 }
 
 #seed-info-area p {
-    margin: 0; /* 段落のデフォルトマージンを削除 */
+    margin: 0;
+}
+
+/* Volume Controls */
+#volume-controls {
+    text-align: left; /* Adjusted to left */
+    margin-bottom: 4px;
 }
 
 
 button {
-    background-color: #61dafb; /* 元の明るい水色に戻す */
+    background-color: #61dafb;
     color: #282c34;
     border: none;
-    padding: 8px 16px; /* パディングを調整 */
-    border-radius: 4px; /* ボーダーラディウスを調整 */
+    padding: 10px 10px; /* Increased padding */
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.9em; /* フォントサイズを調整 */
-    margin: 4px; /* マージンを調整 */
+    font-size: 1.0em; /* Adjusted font size */
+    margin: 6px; /* Adjusted margin */
     transition: background-color 0.3s ease, transform 0.1s ease;
 }
 
 button:hover {
-    background-color: #21a1f1; /* ホバーで少し明るく */
+    background-color: #21a1f1;
     transform: translateY(-2px);
 }
 
@@ -171,69 +218,67 @@ button:active {
 }
 
 .choice-button {
-    background-color: #5e2e7a; /* 暗い紫に調整 */
+    background-color: #5e2e7a;
     color: white;
 }
 
 .choice-button:hover {
-    background-color: #4a2562; /* ホバーでさらに暗く */
+    background-color: #4a2562;
 }
 
-/* 派遣中/待機中のボタン色 (旧ボタンクラス) */
-.dispatch-button-old { /* 旧クラス名を保持し、新規クラスと区別 */
-    background-color: #2a6a2c; /* 緑色をさらに暗く */
+/* Dispatch/Resting button colors (old button classes) */
+.dispatch-button-old {
+    background-color: #2a6a2c;
     color: white;
 }
 
 .dispatch-button-old:hover {
-    background-color: #1f5321; /* ホバーでさらに暗く */
+    background-color: #1f5321;
 }
 
-.rest-button-old { /* 旧クラス名を保持し、新規クラスと区華 */
-    background-color: #9d2020; /* 赤色をさらに暗く */
+.rest-button-old {
+    background-color: #9d2020;
     color: white;
 }
 
 .rest-button-old:hover {
-    background-color: #881919; /* ホバーでさらに暗く */
+    background-color: #881919;
 }
 
-/* party-info のスタイルを調整 */
+/* Party Info styles */
 #party-info {
     background-color: #4f535a;
     border-radius: 5px;
-    padding: 8px; /* パディングを調整 */
+    padding: 8px;
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
 }
 
-/* モン娘リストのコンテナ */
+/* Monster list container */
 #party-list-container {
-    max-height: 320px; /* モン娘カードの高さに応じて調整（全体的に小さくなった分調整） */
+    max-height: 800px;
     overflow-y: auto;
-    padding-top: 4px; /* タイトルとリストの間に少しスペースを追加 */
+    padding-top: 4px;
 }
 
 #party-list {
     list-style: none;
     padding: 0;
     display: grid;
-    /* 4カラム固定から5カラム固定に変更 */
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(2, min-content); /* 2行固定 */
-    row-gap: 4px; /* 行間の間隔を調整 */
-    column-gap: 4px; /* 列間の間隔を維持 */
-    justify-items: stretch; /* アイテムをグリッドセルいっぱいに引き伸ばす */
-    margin-top: 0; /* 親要素のpaddingで調整するため、ここでは0 */
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Responsive grid for monster cards */
+    gap: 4px;
+    justify-items: stretch;
+    margin-top: 0;
 }
 
 #party-list li {
     background-color: #5d6168;
     border-radius: 5px;
-    padding: 4px; /* パディングを調整 */
+    padding: 2px;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    min-height: 80px; /* 枠の最小高さを調整 */
+    min-height: 120px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -241,23 +286,31 @@ button:active {
     transition: background-color 0.2s ease, border 0.2s ease, transform 0.1s ease;
     position: relative;
     cursor: grab;
-    font-size: 0.8em; /* カード内のフォントサイズを調整 */
+    font-size: 0.9em;
 }
 
-/* ドラッグ中のアイテムのスタイル */
+/* Monster image style */
+.monster-image {
+    width: 128px;
+    height: 128px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    margin-bottom: 2px;
+}
+
+/* Dragging item style */
 #party-list li.dragging {
     opacity: 0.5;
     border: 2px dashed #61dafb;
 }
 
-/* ドラッグオーバー時のターゲットのスタイル */
+/* Drag over target style */
 #party-list li.drag-over {
-    border: 2px solid #ffcc00;
+    border: 4px solid #ffcc00;
     box-shadow: 0 0 10px rgba(255, 204, 0, 0.7);
 }
 
-
-/* モン娘がいない空の枠用のスタイル */
+/* Empty slot style */
 #party-list li.empty-slot {
     background-color: #4a4e55;
     border: 1px dashed #61dafb;
@@ -267,7 +320,7 @@ button:active {
     cursor: default;
 }
 
-/* 探索派遣フェーズでクリック可能なモン娘のスタイル */
+/* Selectable monster style during dispatch phase */
 #party-list li.selectable-monster {
     cursor: pointer;
     border: 2px solid transparent;
@@ -278,7 +331,7 @@ button:active {
     transform: translateY(-2px);
 }
 
-/* 派遣中のモン娘のスタイル */
+/* Dispatched monster style */
 #party-list li.dispatch-monster {
     background-color: #2a6a2c;
     border-color: #4CAF50;
@@ -289,7 +342,7 @@ button:active {
     background-color: #1f5321;
 }
 
-/* 待機中のモン娘のスタイル */
+/* Resting monster style */
 #party-list li.resting-monster {
     background-color: #9d2020;
     border-color: #F44336;
@@ -300,15 +353,15 @@ button:active {
     background-color: #aa4f3b !important;
 }
 
-/* --- モン娘ポップアップのスタイル --- */
+/* --- Monster Tooltip Styles --- */
 #monster-tooltip {
     position: absolute;
     background-color: rgba(30, 30, 30, 0.95);
     color: #f8f8f2;
     border: 1px solid #61dafb;
     border-radius: 8px;
-    padding: 12px; /* パディングを調整 */
-    max-width: 220px; /* 最大幅を調整 */
+    padding: 15px; /* Increased padding */
+    max-width: 250px; /* Increased max-width */
     z-index: 2002;
     pointer-events: none;
     opacity: 0;
@@ -316,22 +369,22 @@ button:active {
     transition: opacity 0.2s ease, visibility 0.2s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     text-align: left;
-    font-size: 0.8em; /* フォントサイズを調整 */
-    line-height: 1.3; /* 行の高さを調整 */
+    font-size: 0.9em; /* Adjusted font size */
+    line-height: 1.4; /* Adjusted line-height */
 }
 
 #monster-tooltip h4 {
     color: #61dafb;
     margin-top: 0;
-    margin-bottom: 6px; /* マージンを調整 */
-    font-size: 1.0em; /* フォントサイズを調整 */
+    margin-bottom: 8px; /* Adjusted margin */
+    font-size: 1.1em; /* Adjusted font size */
     border-bottom: 1px solid #4f535a;
-    padding-bottom: 4px; /* パディングを調整 */
+    padding-bottom: 6px; /* Adjusted padding */
 }
 
 #monster-tooltip p {
     margin: 0;
-    padding: 2px 0;
+    padding: 3px 0;
 }
 
 #monster-tooltip .coin-attribute-name {
@@ -340,47 +393,47 @@ button:active {
 }
 
 #monster-tooltip .coin-description {
-    font-size: 1.0em; /* フォントサイズを調整 */
+    font-size: 1.0em; /* Adjusted font size */
     color: #cccccc;
-    margin-left: 8px; /* マージンを調整 */
+    margin-left: 10px; /* Adjusted margin */
 }
 
-/* 種族名と地形の文字色を薄明るい黄色に修正 */
+/* Monster species name and terrain color */
 .monster-name-color {
     color: rgb(255, 255, 192);
 }
 
-/* 硬貨属性の丸い表示スタイル */
+/* Coin attribute circle style */
 .coin-attribute-circle {
     display: inline-flex;
     justify-content: center;
     align-items: center;
     border-radius: 50%;
     color: white;
-    font-size: 0.8em; /* フォントサイズを調整 */
-    padding: 2px 4px; /* パディングを調整 */
-    margin: 6px 4px; /* マージンを調整 */
+    font-size: 0.9em; /* Adjusted font size */
+    padding: 3px 5px; /* Adjusted padding */
+    margin: 8px 5px; /* Adjusted margin */
     vertical-align: middle;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    min-width: 20px; /* 最小幅を調整 */
-    min-height: 20px; /* 最小高さを調整 */
+    min-width: 25px; /* Adjusted min-width */
+    min-height: 25px; /* Adjusted min-height */
     box-sizing: border-box;
 
-    /* 二重丸の縁取り */
+    /* Double border */
     background-color: transparent;
-    border: 1.5px solid var(--circle-color);
-    outline: 3.0px solid var(--circle-color);
-    outline-offset: 2px;
+    border: 2px solid var(--circle-color);
+    outline: 4px solid var(--circle-color);
+    outline-offset: 3px;
 }
 
-/* 硬貨属性を囲む新しいラッパー */
+/* New wrapper for coin attributes */
 .coin-attributes-wrapper {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 3px; /* ギャップを調整 */
-    margin-top: 4px; /* マージンを調整 */
-    margin-bottom: 4px; /* マージンを調整 */
+    gap: 5px; /* Adjusted gap */
+    margin-top: 6px; /* Adjusted margin */
+    margin-bottom: 6px; /* Adjusted margin */
 }
 
 /* Coin Animation Styles */
@@ -390,8 +443,8 @@ button:active {
     justify-content: center;
     align-items: flex-end;
     margin: 0;
-    min-height: 350px; /* 高さを調整 */
-    max-height: 450px; /* 高さを調整 */
+    min-height: 400px; /* Increased height */
+    max-height: 600px; /* Increased height */
     overflow: hidden;
     position: absolute;
     top: 0;
@@ -403,10 +456,10 @@ button:active {
     background-color: rgba(0, 0, 0, 0.3);
 }
 
-/* コイン全体のコンテナ */
+/* Coin container */
 .coin-container {
-    width: 32px; /* コインのサイズを調整 */
-    height: 32px; /* コインのサイズを調整 */
+    width: 48px; /* Increased coin size */
+    height: 48px; /* Increased coin size */
     position: absolute;
     transform-style: preserve-3d;
 }
@@ -418,8 +471,7 @@ button:active {
     image-rendering: pixelated;
 }
 
-
-/* モーダルポップアップのスタイル */
+/* Modal popup styles */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -437,39 +489,40 @@ button:active {
     background-color: #3b3f47;
     border: 2px solid #61dafb;
     border-radius: 10px;
-    padding: 20px; /* パディングを調整 */
+    padding: 4px 20px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     text-align: center;
-    max-width: 90%; /* 最大幅を調整 */
-    min-width: 280px; /* 最小幅を調整 */
+    max-width: 96%;
+    min-width: 400px;
+    max-height: 96%;
     color: #f8f8f2;
-    font-size: 1.0em; /* フォントサイズを調整 */
+    font-size: 1.1em; /* Adjusted font size */
     display: flex;
     flex-direction: column;
-    gap: 15px; /* ギャップを調整 */
+    gap: 4px;
 }
 
 .modal-content h3 {
     color: #61dafb;
     margin-top: 0;
-    margin-bottom: 10px; /* マージンを調整 */
-    font-size: 1.4em; /* フォントサイズを調整 */
+    margin-bottom: 5px; /* Adjusted margin */
+    font-size: 1.8em; /* Adjusted font size */
 }
 
 .modal-log-content {
     text-align: left;
-    max-height: 500px; /* 高さを調整 */
+    max-height: 600px;
     overflow-y: auto;
     background-color: #2e3136;
-    padding: 12px; /* パディングを調整 */
+    padding: 16px;
     border-radius: 8px;
-    line-height: 1.5;
-    margin-bottom: 12px; /* マージンを調整 */
-    font-size: 0.9em; /* フォントサイズを調整 */
+    line-height: 1.6;
+    margin-bottom: 4px; /* Adjusted margin */
+    font-size: 1.0em; /* Adjusted font size */
 }
 
 .modal-log-content p {
-    margin: 4px 0; /* マージンを調整 */
+    margin: 6px 0; /* Adjusted margin */
     word-wrap: break-word;
 }
 
@@ -478,8 +531,8 @@ button:active {
     color: #282c34;
     border: none;
     border-radius: 8px;
-    padding: 8px 16px; /* パディングを調整 */
-    font-size: 0.9em; /* フォントサイズを調整 */
+    padding: 10px 20px; /* Adjusted padding */
+    font-size: 1.0em; /* Adjusted font size */
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.1s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -496,15 +549,15 @@ button:active {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* 硬貨ツールチップのスタイル */
+/* Coin tooltip styles */
 #coin-tooltip {
     position: absolute;
     background-color: rgba(30, 30, 30, 0.95);
     color: #f8f8f2;
     border: 1px solid #61dafb;
     border-radius: 8px;
-    padding: 12px; /* パディングを調整 */
-    max-width: 220px; /* 最大幅を調整 */
+    padding: 15px; /* Increased padding */
+    max-width: 250px; /* Increased max-width */
     z-index: 2003;
     pointer-events: none;
     opacity: 0;
@@ -512,11 +565,46 @@ button:active {
     transition: opacity 0.2s ease, visibility 0.2s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     text-align: left;
-    font-size: 0.8em; /* フォントサイズを調整 */
-    line-height: 1.4;
+    font-size: 0.9em; /* Adjusted font size */
+    line-height: 1.5;
 }
 
-/* メンバーカードの選択状態 */
+/* Life tooltip styles */
+#life-tooltip {
+    position: absolute;
+    background-color: rgba(30, 30, 30, 0.95);
+    color: #f8f8f2;
+    border: 1px solid #a2ff7e; /* 生い立ちの色に合わせて調整 */
+    border-radius: 8px;
+    padding: 15px;
+    max-width: 250px;
+    z-index: 2004; /* 他のツールチップより高いz-index */
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    text-align: left;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+#life-tooltip h4 {
+    color: #a2ff7e; /* 生い立ちの色に合わせて調整 */
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 1.1em;
+    border-bottom: 1px solid #4f535a;
+    padding-bottom: 6px;
+}
+
+#life-tooltip p {
+    margin: 0;
+    padding: 3px 0;
+}
+
+
+/* Member card selected state */
 .monster-card.selected {
     border-color: #ffcc00;
     box-shadow: 0 0 15px rgba(255, 204, 0, 0.7);
@@ -533,24 +621,214 @@ button:active {
     box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
 }
 
-/* ホムンクルス画像のスタイル */
+/* Homunculus image style */
 #homunculus-container {
     position: fixed;
-    top: 15px; /* 位置を調整 */
-    right: 15px; /* 位置を調整 */
+    top: 25px; /* Adjusted position */
+    right: 25px; /* Adjusted position */
     z-index: 1000;
+    display: flex; /* Flexboxを追加 */
+    align-items: center; /* 垂直方向中央揃え */
+    gap: 10px; /* 画像間のスペース */
 }
 
 #homunculus-image {
-    width: 128px; /* サイズを調整 */
+    width: 128px; /* Adjusted size */
     height: auto;
     cursor: pointer;
     transition: transform 0.2s ease-in-out;
     border-radius: 50%;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
     image-rendering: pixelated;
 }
 
 #homunculus-image:hover {
     transform: scale(1.1);
+}
+
+/* Alchemy image style */
+.alchemy-image {
+    width: 80px; /* Adjust size as needed */
+    height: auto;
+    image-rendering: pixelated;
+    display: none; /* 初期状態では非表示 */
+}
+
+
+/* Player life image style */
+.player-life-image {
+    width: 100px; /* Fixed width */
+    height: auto;
+    /* margin-right: auto; Removed as it's now in a flex container */
+    margin-bottom: 0; /* Remove margin-bottom as gap handles spacing */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease-in-out;
+    cursor: pointer;
+    min-width: 80px; /* Ensure it doesn't get too small */
+}
+
+.player-life-image:hover {
+    transform: scale(1.05);
+}
+
+
+/* Media Queries for Responsiveness */
+@media (max-width: 1024px) {
+    #game-container {
+        flex-direction: column; /* Stack columns on smaller screens */
+        max-width: 800px;
+        padding: 12px;
+    }
+
+    .left-column, .right-column {
+        min-width: unset; /* Remove min-width for smaller screens */
+        width: 100%; /* Take full width */
+    }
+
+    h1 {
+        font-size: 1.8em;
+    }
+
+    h2 {
+        font-size: 1.3em;
+    }
+
+    .seed-input-area input {
+        width: 180px;
+    }
+
+    #party-list {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Adjust grid for smaller screens */
+    }
+
+    #party-list li {
+        min-height: 100px;
+        font-size: 0.85em;
+    }
+
+    .monster-image {
+        width: 80px;
+        height: 80px;
+    }
+
+    #monster-tooltip, #coin-tooltip, #life-tooltip {
+        max-width: 200px;
+        font-size: 0.8em;
+        padding: 10px;
+    }
+
+    .modal-content {
+        max-width: 90%;
+        min-width: 280px;
+        padding: 20px;
+        font-size: 1.0em;
+    }
+
+    #homunculus-image {
+        width: 100px;
+    }
+
+    .alchemy-image {
+        width: 60px; /* Adjust size for smaller screens */
+    }
+
+    .player-life-image {
+        width: 80px; /* Adjust for smaller screens */
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        font-size: 0.9em;
+        padding: 4px;
+    }
+
+    #game-container {
+        padding: 8px;
+        gap: 8px;
+    }
+
+    h1 {
+        font-size: 1.6em;
+    }
+
+    h2 {
+        font-size: 1.2em;
+    }
+
+    #game-info {
+        font-size: 0.95em;
+        padding: 6px;
+    }
+
+    #game-messages {
+        min-height: 120px;
+        max-height: 250px;
+        padding: 10px;
+        font-size: 0.8em;
+    }
+
+    .seed-input-area input {
+        width: 150px;
+    }
+
+    button {
+        padding: 8px 16px;
+        font-size: 0.9em;
+        margin: 4px;
+    }
+
+    #party-list {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 6px;
+    }
+
+    #party-list li {
+        min-height: 80px;
+        font-size: 0.75em;
+        padding: 6px;
+    }
+
+    .monster-image {
+        width: 64px;
+        height: 64px;
+    }
+
+    #monster-tooltip, #coin-tooltip, #life-tooltip {
+        max-width: 180px;
+        font-size: 0.75em;
+        padding: 8px;
+    }
+
+    .modal-content {
+        padding: 15px;
+        font-size: 0.9em;
+    }
+
+    .modal-log-content {
+        max-height: 400px;
+        padding: 10px;
+        font-size: 0.85em;
+    }
+
+    #homunculus-container {
+        top: 10px;
+        right: 10px;
+        flex-direction: column; /* 縦並びにする */
+        gap: 5px; /* 画像間のスペースを調整 */
+    }
+
+    #homunculus-image {
+        width: 80px;
+    }
+
+    .alchemy-image {
+        width: 40px; /* Adjust size for smaller screens */
+    }
+
+    .player-life-image {
+        width: 60px; /* Further adjust for smaller screens */
+        min-width: unset;
+    }
 }

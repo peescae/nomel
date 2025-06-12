@@ -12,9 +12,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const homunculusImage = document.getElementById('homunculus-image');
     const helpOverlay = document.getElementById('help-overlay');
     const helpModalCloseButton = document.getElementById('help-modal-close-button');
+    const leftAlchemyImage = document.getElementById('left-alchemy-image');
+    const rightAlchemyImage = document.getElementById('right-alchemy-image');
 
     // 必要なDOM要素が全て存在するか確認します。
-    if (homunculusImage && helpOverlay && helpModalCloseButton) {
+    if (homunculusImage && helpOverlay && helpModalCloseButton && leftAlchemyImage && rightAlchemyImage) {
         // ヘルプオーバーレイが初期表示されないように、念のため明示的に非表示にします。
         // style.cssでdisplay: none;が設定されていることが望ましいですが、ここでも設定します。
         helpOverlay.style.display = 'none'; 
@@ -45,6 +47,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             homunculusImage.style.display = 'none'; 
         }
 
+        // 錬金術師の画像を初期状態では非表示にする（CSSでも設定済みだが念のため）
+        leftAlchemyImage.style.display = 'none';
+        rightAlchemyImage.style.display = 'none';
+
         // ホムンクルス画像クリックでヘルプウィンドウを表示します。
         homunculusImage.addEventListener('click', () => {
             console.log("ホムンクルス画像がクリックされました。"); // デバッグ用ログ
@@ -72,7 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("存在しない要素: ", {
             homunculusImage: !!homunculusImage,
             helpOverlay: !!helpOverlay,
-            helpModalCloseButton: !!helpModalCloseButton
+            helpModalCloseButton: !!helpModalCloseButton,
+            leftAlchemyImage: !!leftAlchemyImage,
+            rightAlchemyImage: !!rightAlchemyImage
         });
     }
 });

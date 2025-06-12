@@ -13,15 +13,15 @@ export const coinAttributesMap = [
     { id: 'dark', name: '闇', color: 'rgb(29, 9, 73)', help: '特殊効果なし。' },
     { id: 'sky', name: '空', color: 'rgb(88, 237, 248)', help: '特殊効果なし。' },
     { id: 'magic', name: '魔', color: 'rgb(132, 0, 255)', help: '味方全体の魔の総数が敵全体の魔の総数を超える場合、必ず表になる。' },
-    { id: 'flower', name: '花', color: 'rgb(233, 112, 202)', help: '表の場合、味方全体の戦闘手当に0.8を乗算する。' },
+    { id: 'flower', name: '花', color: 'rgb(233, 112, 202)', help: '表の場合、味方全体の戦闘手当に0.5を乗算する。' },
     { id: 'fishing', name: '漁', color: 'rgb(0, 85, 134)', help: '表の場合、水の硬貨を持つ全ての敵の戦力値に1を減算する。探索時、この硬貨を水の硬貨として扱う。' },
     { id: 'water', name: '水', color: 'rgb(0, 162, 255)', help: '特殊効果なし。' },
     { id: 'snow', name: '雪', color: 'rgb(173, 216, 230)', help: '特殊効果なし。' },
-    { id: 'trap', name: '罠', color: 'rgb(129, 86, 55)', help: '待機時、襲撃確率に0.6を乗算する。' },
+    { id: 'trap', name: '罠', color: 'rgb(129, 86, 55)', help: '待機時、全ての敵の戦力値に1を減算する。' },
     { id: 'bow', name: '弓', color: 'rgb(102, 96, 96)', help: '表の場合、空の硬貨を持つ全ての敵の戦力値に1を減算する。' },
     { id: 'iron', name: '鉄', color: 'rgb(150, 150, 150)', help: '表の場合、この硬貨が産出する戦力値に2を乗算する。' },
     { id: 'scale', name: '鱗', color: 'rgb(123, 155, 92)', help: '裏の場合、一度だけ硬貨を振り直す。' },
-    { id: 'blood', name: '血', color: 'rgb(180, 0, 0)', help: '戦闘手当に1を減算する。' },
+    { id: 'blood', name: '血', color: 'rgb(180, 0, 0)', help: '表の場合、自分の戦闘手当を0にする。' },
     { id: 'oni', name: '鬼', color: 'rgb(200, 50, 0)', help: '必ず表になる。' },
     { id: 'power', name: '力', color: 'rgb(255, 165, 0)', help: '表の場合、この硬貨が産出する戦力値に2を乗算する。' },
     { id: 'thunder', name: '雷', color: 'rgb(255, 255, 0)', help: '表の場合、雷の硬貨を持たない全ての敵の戦力値に1を減算する。' },
@@ -31,55 +31,55 @@ export const coinAttributesMap = [
 ];
 
 // モン娘のテンプレート定義
-// 各モン娘の名前、所持硬貨、維持費を含む。
+// 各モン娘の名前、所持硬貨、食費を含む。
 export const monsterTemplates = [
-    { name: 'インプ', coins: ['sky', 'dark', 'magic'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'ゴブリン', coins: ['plain', 'forest', 'dark'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'コロポックル', coins: ['forest', 'snow', 'fishing'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'フェアリー', coins: ['forest', 'flower', 'sky'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'ユキンコ', coins: ['snow', 'snow', 'snow'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'シェリーコート', coins: ['water', 'water', 'water'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'ローン', coins: ['water', 'snow', 'fishing'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'グレムリン', coins: ['thunder', 'thunder', 'thunder'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'チョンチョン', coins: ['blood', 'sky', 'sky'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'アルラウネ', coins: ['forest', 'flower', 'poison'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'マイコニド', coins: ['forest', 'dark', 'poison'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'ユキオンナ', coins: ['snow', 'snow', 'magic', 'magic'], upkeep: 4 }, // 4枚, 維持費4
-    { name: 'ルサルカ', coins: ['water', 'water', 'magic', 'magic'], upkeep: 4 }, // 4枚, 維持費4
-    { name: 'ドリアード', coins: ['forest', 'forest', 'magic', 'magic'], upkeep: 4 }, // 4枚, 維持費4
-    { name: 'ネコマタ', coins: ['forest', 'forest', 'dark', 'magic'], upkeep: 4 }, // 4枚, 維持費4
-    { name: 'メリサンド', coins: ['scale', 'scale', 'water', 'sky'], upkeep: 4 }, // 4枚, 維持費4
-    { name: 'ハーピー', coins: ['forest', 'forest', 'sky', 'sky'], upkeep: 4 }, // 4枚, 維持費4
-    { name: 'セイレーン', coins: ['water', 'water', 'sky', 'sky'], upkeep: 4 }, // 4枚, 維持費4
-    { name: 'セルキー', coins: ['water', 'snow', 'fishing', 'fishing', 'iron'], upkeep: 5 }, // 5枚, 維持費5
-    { name: 'ジョローグモ', coins: ['forest', 'forest', 'dark', 'dark', 'trap'], upkeep: 5 }, // 5枚, 維吉費5
-    { name: 'ラミア', coins: ['scale', 'scale', 'forest', 'dark', 'blood'], upkeep: 5 }, // 5枚, 維持費5
-    { name: 'セントール', coins: ['plain', 'plain', 'plain', 'bow', 'bow'], upkeep: 5 }, // 5枚, 維持費5
-    { name: 'ワーウルフ', coins: ['plain', 'plain', 'forest', 'forest', 'iron'], upkeep: 5 }, // 5枚, 維持費5
-    { name: 'リザードマン', coins: ['scale', 'scale', 'forest', 'forest', 'iron'], upkeep: 5 }, // 5枚, 維持費5
-    { name: 'サハギン', coins: ['scale', 'scale', 'water', 'water', 'iron'], upkeep: 5 }, // 5枚, 維持費5
-    { name: 'オニ', coins: ['oni', 'oni', 'oni', 'forest', 'iron'], upkeep: 5 }, // 5枚, 維持費5
-    { name: 'ヴィーヴル', coins: ['scale', 'dark', 'dark', 'sky', 'sky'], upkeep: 5 }, // 5枚, 維持費5
-    { name: 'キクロプス', coins: ['oni', 'oni', 'oni', 'thunder', 'thunder', 'iron', 'iron'], upkeep: 7 }, // 7枚, 維持費7
-    { name: 'カリブディス', coins: ['water', 'water', 'water', 'water', 'power', 'power', 'power', 'power'], upkeep: 8 }, // 8枚, 維持費8
-    { name: 'ドラゴニュート', coins: ['scale', 'scale', 'sky', 'sky', 'fire', 'fire', 'poison', 'poison'], upkeep: 8 }, // 8枚, 維持費8
-    { name: 'グーラLv1', coins: ['enemy', 'oni', 'power'], upkeep: 3 }, // 3枚, 維持費3
-    { name: 'グーラLv2', coins: ['enemy', 'oni', 'power', 'power'], upkeep: 4 }, // 4枚, 維持費4
-    { name: 'グーラLv3', coins: ['enemy', 'oni', 'power', 'power', 'power'], upkeep: 5 }, // 5枚, 維持費5
-    { name: 'ガーゴイル', coins: ['enemy', 'iron', 'iron', 'sky'], upkeep: 4 }, // 4枚, 維持費4
-    { name: 'サキュバス', coins: ['enemy', 'flower', 'dark', 'magic'], upkeep: 4 }, // 4枚, 維持費4
-    { name: 'アクロ王', coins: ['enemy', 'snow', 'oni', 'oni', 'iron', 'iron'], upkeep: 6 }, // 6枚, 維持費6
-    { name: 'スライム', coins: ['enemy', 'water', 'water', 'poison', 'poison', 'flower', 'flower'], upkeep: 7 }, // 7枚, 維持費7
-    { name: 'スフィンクス', coins: ['enemy', 'plain', 'plain', 'plain', 'sky', 'sky', 'sky', 'magic', 'magic'], upkeep: 9 }, // 9枚, 維持費9
-    { name: 'エキドナLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'poison', 'poison', 'dark', 'dark'], upkeep: 8 }, // 8枚, 維持費8
-    { name: 'エキドナLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark'], upkeep: 10 }, // 10枚, 維持費10
-    { name: 'エキドナLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark', 'dark'], upkeep: 12 }, // 12枚, 維持費12
-    { name: 'ニドヘグLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'dark', 'dark'], upkeep: 13 }, // 13枚, 維持費13
-    { name: 'ニドヘグLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark'], upkeep: 15 }, // 15枚, 維持費15
-    { name: 'ニドヘグLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark', 'dark'], upkeep: 17 }, // 17枚, 維持費17
-    { name: 'セドナLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'snow', 'snow'], upkeep: 10 }, // 10枚, 維持費10
-    { name: 'セドナLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'water', 'snow', 'snow', 'snow'], upkeep: 12 }, // 12枚, 維持費12
-    { name: 'セドナLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'water', 'water', 'snow', 'snow', 'snow', 'snow'], upkeep: 14 }, // 14枚, 維持費14
+    { name: 'インプ', coins: ['sky', 'dark', 'magic'], upkeep: 3 },
+    { name: 'ゴブリン', coins: ['plain', 'forest', 'dark'], upkeep: 3 },
+    { name: 'コロポックル', coins: ['forest', 'snow', 'fishing'], upkeep: 3 },
+    { name: 'フェアリー', coins: ['forest', 'flower', 'sky'], upkeep: 3 },
+    { name: 'ユキンコ', coins: ['snow', 'snow', 'snow'], upkeep: 3 },
+    { name: 'シェリーコート', coins: ['water', 'water', 'water'], upkeep: 3 },
+    { name: 'ローン', coins: ['water', 'snow', 'fishing'], upkeep: 3 },
+    { name: 'グレムリン', coins: ['thunder', 'thunder', 'thunder'], upkeep: 3 },
+    { name: 'チョンチョン', coins: ['blood', 'sky', 'sky'], upkeep: 3 },
+    { name: 'アルラウネ', coins: ['forest', 'flower', 'poison'], upkeep: 3 },
+    { name: 'マイコニド', coins: ['forest', 'dark', 'poison'], upkeep: 3 },
+    { name: 'ユキオンナ', coins: ['snow', 'snow', 'magic', 'magic'], upkeep: 4 },
+    { name: 'ルサルカ', coins: ['water', 'water', 'magic', 'magic'], upkeep: 4 },
+    { name: 'ドリアード', coins: ['forest', 'forest', 'magic', 'magic'], upkeep: 4 },
+    { name: 'ネコマタ', coins: ['forest', 'forest', 'dark', 'magic'], upkeep: 4 },
+    { name: 'メリサンド', coins: ['scale', 'scale', 'water', 'sky'], upkeep: 4 },
+    { name: 'ハーピー', coins: ['forest', 'forest', 'sky', 'sky'], upkeep: 4 },
+    { name: 'セイレーン', coins: ['water', 'water', 'sky', 'sky'], upkeep: 4 },
+    { name: 'セルキー', coins: ['water', 'snow', 'fishing', 'fishing', 'iron'], upkeep: 5 },
+    { name: 'ジョローグモ', coins: ['forest', 'forest', 'dark', 'dark', 'trap'], upkeep: 5 },
+    { name: 'ラミア', coins: ['scale', 'scale', 'forest', 'dark', 'blood'], upkeep: 5 },
+    { name: 'セントール', coins: ['plain', 'plain', 'plain', 'bow', 'bow'], upkeep: 5 },
+    { name: 'ワーウルフ', coins: ['plain', 'plain', 'forest', 'forest', 'iron'], upkeep: 5 },
+    { name: 'リザードマン', coins: ['scale', 'scale', 'forest', 'forest', 'iron'], upkeep: 5 },
+    { name: 'サハギン', coins: ['scale', 'scale', 'water', 'water', 'iron'], upkeep: 5 },
+    { name: 'オニ', coins: ['oni', 'oni', 'oni', 'forest', 'iron'], upkeep: 5 },
+    { name: 'ヴィーヴル', coins: ['scale', 'dark', 'dark', 'sky', 'sky'], upkeep: 5 },
+    { name: 'キクロプス', coins: ['oni', 'oni', 'oni', 'thunder', 'thunder', 'iron', 'iron'], upkeep: 7 },
+    { name: 'カリブディス', coins: ['water', 'water', 'water', 'water', 'power', 'power', 'power', 'power'], upkeep: 8 },
+    { name: 'ドラゴニュート', coins: ['scale', 'scale', 'sky', 'sky', 'fire', 'fire', 'poison', 'poison'], upkeep: 8 },
+    { name: 'グーラLv1', coins: ['enemy', 'oni', 'blood'], upkeep: 3 },
+    { name: 'グーラLv2', coins: ['enemy', 'oni', 'blood', 'power'], upkeep: 4 },
+    { name: 'グーラLv3', coins: ['enemy', 'oni', 'blood', 'power', 'power'], upkeep: 5 },
+    { name: 'ガーゴイル', coins: ['enemy', 'iron', 'iron', 'sky'], upkeep: 4 },
+    { name: 'サキュバス', coins: ['enemy', 'flower', 'dark', 'magic'], upkeep: 4 },
+    { name: 'アテルイ', coins: ['enemy', 'snow', 'oni', 'oni', 'iron', 'bow'], upkeep: 6 },
+    { name: 'スライム', coins: ['enemy', 'water', 'water', 'poison', 'poison', 'flower', 'flower'], upkeep: 7 },
+    { name: 'スフィンクス', coins: ['enemy', 'plain', 'plain', 'plain', 'sky', 'sky', 'sky', 'magic', 'magic'], upkeep: 9 },
+    { name: 'エキドナLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'poison', 'poison', 'dark', 'dark'], upkeep: 8 },
+    { name: 'エキドナLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark'], upkeep: 10 },
+    { name: 'エキドナLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark', 'dark'], upkeep: 12 },
+    { name: 'ニドヘグLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'dark', 'dark'], upkeep: 14 },
+    { name: 'ニドヘグLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark'], upkeep: 16 },
+    { name: 'ニドヘグLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark', 'dark'], upkeep: 18 },
+    { name: 'セドナLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'snow', 'snow'], upkeep: 10 },
+    { name: 'セドナLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'water', 'snow', 'snow', 'snow'], upkeep: 12 },
+    { name: 'セドナLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'water', 'water', 'snow', 'snow', 'snow', 'snow'], upkeep: 14 },
 ];
 
 // 地形タイプと対応する硬貨属性の定義
@@ -157,9 +157,9 @@ export const FINAL_BOSS_ENCOUNTERS = {
     ],
     // 砦でのラスボス戦
     fortress: [
-        [{ name: 'アクロ王', count: 1 }, { name: 'キクロプス', count: 1 }, { name: 'オニ', count: 2 }, { name: 'セントール', count: 2 }], // 1戦目
-        [{ name: 'アクロ王', count: 1 }, { name: 'キクロプス', count: 1 }, { name: 'オニ', count: 1 }, { name: 'セントール', count: 1 }], // 2戦目
-        [{ name: 'アクロ王', count: 1 }, { name: 'キクロプス', count: 1 }] // 3戦目
+        [{ name: 'アテルイ', count: 1 }, { name: 'キクロプス', count: 1 }, { name: 'ワーウルフ', count: 2 }, { name: 'セントール', count: 2 }], // 1戦目
+        [{ name: 'アテルイ', count: 1 }, { name: 'キクロプス', count: 1 }, { name: 'オニ', count: 2 }], // 2戦目
+        [{ name: 'アテルイ', count: 1 }, { name: 'キクロプス', count: 1 }] // 3戦目
     ],
     // 沼でのラスボス戦
     swamp: [
@@ -187,30 +187,45 @@ export const FINAL_BOSS_ENCOUNTERS = {
     ],
     // 海でのラスボス戦
     sea: [
-        [{ name: 'セドナLv1', count: 1 }, { name: 'サハギン', count: 2 }], // 1戦目
-        [{ name: 'セドナLv2', count: 1 }, { name: 'サハギン', count: 2 }], // 2戦目
+        [{ name: 'セドナLv1', count: 1 }, { name: 'シェリーコート', count: 2 }], // 1戦目
+        [{ name: 'セドナLv2', count: 1 }, { name: 'ルサルカ', count: 2 }], // 2戦目
         [{ name: 'セドナLv3', count: 1 }, { name: 'サハギン', count: 2 }] // 3戦目
     ]
 };
 
+// 人生
+export const life = [
+    { name: '農家', help: '野営時の総食料消費量に0.8を乗算する。' },
+    { name: '冒険家', help: '地形の選択肢の数に2を加算する。' },
+    { name: '軍人', help: 'コイントスの回数に1を加算する。' },
+    { name: '炉裏魂', help: '野営時のミルクの生産量に1を加算する。硬貨の枚数が4枚以上のモン娘を仲間にできない。' },
+];
+
 // その他のゲーム定数
 export const GAME_CONSTANTS = {
     MAX_PARTY_SIZE: 3, // ゲーム開始時の仲間加入フェーズでの最大人数
-    INITIAL_FOOD: 60,
+    INITIAL_FOOD: 70,
     INITIAL_MILK: 3,
     BOSS_DAYS: 10, // ボス戦が開始される日数
     MAX_DAYS: 20, // ラスボス戦が開始される日数
-    RAID_BASE_SPECIAL_CHANCE: 0.1, // 特殊襲撃の基本確率
+    RAID_BASE_SPECIAL_CHANCE: 0.2, // 特殊襲撃の基本確率
+    RAID_BASE_DUEL_CHANCE: 0.2, // 決闘の基本確率
     RAID_BASE_NORMAL_CHANCE: 0.5,   // 通常襲撃の基本確率
-    RECRUIT_EVENT_CHANCE: 0.7, // 仲間勧誘の基本確率
-    FAVOUR_EVENT_CHANCE: 0.3, // 神の寵愛の基本確率
+    FAVOUR_EVENT_CHANCE: 0.2, // 神の寵愛の基本確率
+    SISTER_EVENT_CHANCE: 0.2, // 妹加入の基本確率
+    RECRUIT_EVENT_CHANCE: 0.5, // 仲間勧誘の基本確率
     RECRUIT_EVENT_CHANCE_OF_SPECIAL: 0.2, // 仲間勧誘イベントで、全ての種族が抽選の対象になる確率
     RAID_MAX_ATTEMPTS: 3, // 襲撃時のコイントス最大試行回数
+    FOOD_SUPPLY: 3, // 探索時の食料獲得量
     FOOD_PER_COIN: 1, // 硬貨1枚あたりの基本食料獲得量
     FOOD_BONUS_MATCH: 3, // 硬貨属性一致時の追加食料獲得量
+    FOOD_SACRIFICE_COST: 30, // 神に捧げる食料の基本量
+    FOOD_SACRIFICE_RATE: 3, // 神に捧げる食料の係数
     RAID_TRAP_REDUCTION_FACTOR: 0.6, // 罠の硬貨による襲撃確率減少係数
-    RAID_FLOWER_REDUCTION_FACTOR: 0.8, // 花の硬貨による戦闘手当減少係数
+    RAID_FLOWER_REDUCTION_FACTOR: 0.5, // 花の硬貨による戦闘手当減少係数
     ENEMY_COIN_SCALING_DAYS: 4, // 敵の硬貨枚数スケーリングの日間隔
-    DELICACY_DROP_CHANCE: 0.1, // 珍味の獲得確率
+    ENEMY_COUNT_SCALING_DAYS: 3, // 敵の出現数スケーリングの日間隔
+    DELICACY_DROP_CHANCE: 0.25, // 珍味の獲得確率
     COIN_TAIL_OPACITY: 0.2, // 硬貨が裏面の場合の透過率
+    FARMER_SAVINGS: 0.8, // 農家が節約する食料の消費倍率
 };

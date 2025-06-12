@@ -10,12 +10,29 @@
 // data.jsからGAME_CONSTANTSとcoinAttributesMapをインポート
 import { GAME_CONSTANTS, coinAttributesMap } from './data.js';
 
-
 let monsterTooltipElement; // ポップアップ表示用の単一のtooltip要素
 let areaTooltipElement;    // エリア情報ポップアップ用の単一のtooltip要素
 let coinTooltipElement;    // 硬貨情報ポップアップ用の単一のtooltip要素
+let lifeTooltipElement;    // 生い立ち情報ポップアップ用の単一のtooltip要素
 
 let draggedItem = null; // ドラッグ中の要素を保持
+
+// 硬貨表示の状態を管理する変数
+let showCoinsInPartyList = true; // 初期値はtrue（表示）
+
+// imagePaths.jsonから画像パスをロード
+let imagePaths = {};
+let imagePathsLoaded = false; // 画像パスのロード状態を追跡するフラグ
+fetch('./imagePaths.json')
+    .then(response => response.json())
+    .then(data => {
+        imagePaths = data;
+        imagePathsLoaded = true; // ロード完了
+        console.log('Image paths loaded:', imagePaths);
+    })
+    .catch(error => {
+        console.error('Error loading image paths:', error);
+    });
 
 /**
  * モン娘の硬貨情報ポップアップ要素を生成する。
@@ -102,6 +119,34 @@ function createCoinTooltipElement() {
 }
 
 /**
+ * 生い立ち情報ポップアップ要素を生成する。
+ * 初回のみ呼び出され、bodyにアタッチされる。
+ */
+function createLifeTooltipElement() {
+    if (!lifeTooltipElement) { // 既に存在する場合は作成しない
+        lifeTooltipElement = document.createElement('div');
+        lifeTooltipElement.id = 'life-tooltip';
+        lifeTooltipElement.style.cssText = `
+            position: absolute;
+            background-color: #3b3f47;
+            border: 1px solid #a2ff7e; /* 生い立ちの色 */
+            border-radius: 5px;
+            padding: 10px;
+            color: #f8f8f2;
+            font-size: 0.9em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            z-index: 1000;
+            max-width: 250px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            visibility: hidden; /* 初期状態では非表示 */
+        `;
+        document.body.appendChild(lifeTooltipElement);
+    }
+}
+
+/**
  * ポップアップの位置を計算し設定するヘルパー関数。
  * @param {HTMLElement} tooltipElement - ポップアップのDOM要素。
  * @param {HTMLElement} targetElement - マウスオーバーされたDOM要素。
@@ -145,7 +190,7 @@ function positionTooltip(tooltipElement, targetElement) {
 export function showMonsterTooltip(monster, targetElement, coinAttributesMap) {
     createMonsterTooltipElement(); // ポップアップ要素が存在しない場合は作成
 
-    let tooltipContent = `<h4>${monster.name}の硬貨</h4>`;
+    let tooltipContent = `<h4>${monster.name}</h4>`;
     if (monster.coinAttributes.length === 0) {
         tooltipContent += '<p>硬貨を持っていません。</p>';
     } else {
@@ -208,9 +253,22 @@ export function showCoinTooltip(event, coinId, coinAttributesMap) {
     if (!coinInfo) {
         coinTooltipElement.innerHTML = `<p>硬貨情報が見つかりません: ${coinId}</p>`;
     } else {
-        coinTooltipElement.innerHTML = `<h4>${coinInfo.name}の硬貨</h4><p><span class="coin-description">${coinInfo.help}</span></p>`;
+        coinTooltipElement.innerHTML = `<h4>${coinInfo.name}</h4><p><span class="coin-description">${coinInfo.help}</span></p>`;
     }
     positionTooltip(coinTooltipElement, event.currentTarget);
+}
+
+/**
+ * プレイヤーの生い立ち情報ポップアップを表示する。
+ * @param {object} lifeData - 表示対象の生い立ちオブジェクト。
+ * @param {HTMLElement} targetElement - マウスオーバーされたDOM要素 (例: img#player-life-image)。
+ */
+export function showLifeTooltip(lifeData, targetElement) {
+    createLifeTooltipElement(); // ポップアップ要素が存在しない場合は作成
+    if (!lifeTooltipElement) return;
+
+    lifeTooltipElement.innerHTML = `<h4>おじさんは ${lifeData.name}</h4><p>${lifeData.help}</p>`;
+    positionTooltip(lifeTooltipElement, targetElement);
 }
 
 /**
@@ -240,6 +298,16 @@ export function hideCoinTooltip() {
     if (coinTooltipElement) {
         coinTooltipElement.style.opacity = '0';
         coinTooltipElement.style.visibility = 'hidden';
+    }
+}
+
+/**
+ * プレイヤーの生い立ち情報ポップアップを非表示にする。
+ */
+export function hideLifeTooltip() {
+    if (lifeTooltipElement) {
+        lifeTooltipElement.style.opacity = '0';
+        lifeTooltipElement.style.visibility = 'hidden';
     }
 }
 
@@ -274,6 +342,25 @@ export function logMessage(message) {
 }
 
 /**
+ * 硬貨表示の状態を切り替える関数。
+ */
+export function toggleCoinDisplay() {
+    showCoinsInPartyList = !showCoinsInPartyList;
+    const partyList = document.getElementById('party-list');
+    if (partyList) {
+        // Iterate through all monster cards in the party list
+        const monsterCards = partyList.querySelectorAll('.monster-card');
+        monsterCards.forEach(card => {
+            const coinWrapper = card.querySelector('.coin-attributes-wrapper');
+            if (coinWrapper) {
+                coinWrapper.style.display = showCoinsInPartyList ? 'flex' : 'none';
+            }
+        });
+    }
+}
+
+
+/**
  * ゲームのUI表示を更新する。
  * @param {object} gameData - 現在のゲーム状態オブジェクト。
  * @param {Array} coinAttributesMap - data.jsから提供されるcoinAttributesMap。
@@ -283,7 +370,7 @@ export function logMessage(message) {
  * @param {object[]|null} [selectableMonsterPool=null] - 選択可能なモン娘のプール (ボス戦などで使用済みを除外する場合)。
  * @param {number} maxPartySize - ゲームの最大パーティサイズ。
  */
-export function updateUI(gameData, coinAttributesMap, enemies = [], currentArea = null, isSelectionPhase = false, selectableMonsterPool = null, maxPartySize) {
+export async function updateUI(gameData, coinAttributesMap, enemies = [], currentArea = null, isSelectionPhase = false, selectableMonsterPool = null, maxPartySize) {
     const dayDisplay = document.getElementById('days-display'); // idを修正
     const foodDisplay = document.getElementById('food-display');
     const milkDisplay = document.getElementById('milk-display');
@@ -297,6 +384,7 @@ export function updateUI(gameData, coinAttributesMap, enemies = [], currentArea 
     const enemyList = document.getElementById('enemy-list');   // 敵のリスト
     const initialSetupArea = document.getElementById('initial-setup-area');
     const actionArea = document.getElementById('action-area');
+    const playerLifeImage = document.getElementById('player-life-image'); // プレイヤーの生い立ち画像
 
     if (dayDisplay) dayDisplay.innerText = `${gameData.days}`; // gameData.days を使用
     if (milkDisplay) milkDisplay.innerText = `${gameData.milk}`;
@@ -312,10 +400,10 @@ export function updateUI(gameData, coinAttributesMap, enemies = [], currentArea 
         }
     }
     
-    // 仲間のモン娘の維持費合計を計算し表示
+    // 仲間のモン娘の食費合計を計算し表示
     gameData.upkeep = gameData.party.reduce((sum, monster) => sum + monster.upkeep, 0); // ここでgameData.upkeepを更新
     if (partySizeDisplay) {
-        partySizeDisplay.textContent = gameData.upkeep; // 維持費合計を表示
+        partySizeDisplay.textContent = gameData.upkeep; // 食費合計を表示
     }
 
     if (seedDisplay) seedDisplay.innerText = gameData.currentSeed; // シード値の表示を更新
@@ -353,6 +441,18 @@ export function updateUI(gameData, coinAttributesMap, enemies = [], currentArea 
         partyList.innerHTML = '';
         const displayFixedSlots = maxPartySize; // UI表示で常に確保する枠の数
 
+        // 画像パスがまだロードされていない場合は待機
+        if (!imagePathsLoaded) {
+            await new Promise(resolve => {
+                const interval = setInterval(() => {
+                    if (imagePathsLoaded) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, 50);
+            });
+        }
+
         // 実際のモン娘を表示
         gameData.party.forEach((monster, index) => {
             const li = document.createElement('li');
@@ -373,8 +473,18 @@ export function updateUI(gameData, coinAttributesMap, enemies = [], currentArea 
             li.addEventListener('mouseover', (event) => showMonsterTooltip(monster, event.currentTarget, coinAttributesMap));
             li.addEventListener('mouseout', hideMonsterTooltip);
             
+            // モン娘の画像を追加
+            const monsterImage = document.createElement('img');
+            const imageUrl = imagePaths[monster.name];
+            monsterImage.src = imageUrl || './image/default.png'; // デフォルト画像をフォールバック
+            monsterImage.alt = monster.name;
+            monsterImage.width = 128; // 64 * 2
+            monsterImage.height = 128; // 64 * 2
+            monsterImage.classList.add('monster-image');
+            li.appendChild(monsterImage);
+
             // 硬貨属性のHTMLを生成
-            const coinAttributesHtml = `<div class="coin-attributes-wrapper">${monster.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ')}</div>`;
+            const coinAttributesHtml = `<div class="coin-attributes-wrapper" style="display: ${showCoinsInPartyList ? 'flex' : 'none'};">${monster.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ')}</div>`;
 
             // 選択フェーズの場合、クリック可能にする
             if (isSelectionPhase) {
@@ -385,40 +495,34 @@ export function updateUI(gameData, coinAttributesMap, enemies = [], currentArea 
                         // ここで enemies は selectedParty を表す
                         if (enemies.includes(monster)) { 
                             li.classList.add('dispatch-monster'); // 派遣中スタイル
-                            li.innerHTML = `<strong><span class="monster-name-color">${monster.name}</span></strong><br>
-                                            ${coinAttributesHtml}<br>
+                            li.innerHTML += `${coinAttributesHtml}<br>
                                             <span class="status-text">派遣中</span>`;
                         } else {
                             li.classList.add('resting-monster'); // 待機中スタイル
-                            li.innerHTML = `<strong><span class="monster-name-color">${monster.name}</span></strong><br>
-                                            ${coinAttributesHtml}<br>
+                            li.innerHTML += `${coinAttributesHtml}<br>
                                             <span class="status-text">待機中</span>`;
                         }
                     } else {
                         // 選択可能プールに含まれていない、またはhasBeenSentToBattleがtrue
                         li.classList.add('unavailable-monster');
-                        li.innerHTML = `<strong><span class="monster-name-color">${monster.name}</span></strong><br>
-                                        ${coinAttributesHtml}<br>
+                        li.innerHTML += `${coinAttributesHtml}<br>
                                         <span class="status-text" style="color: #888888;">使用済み</span>`; // 暗い色で表示
                     }
                 } else if (gameData.currentPhase === 'expeditionSelection') { // 通常の探索派遣フェーズ
                     // ここで enemies は expeditionParty を表す
                      if (enemies.includes(monster)) {
                         li.classList.add('selectable-monster', 'dispatch-monster');
-                        li.innerHTML = `<strong><span class="monster-name-color">${monster.name}</span></strong><br>
-                                        ${coinAttributesHtml}<br>
+                        li.innerHTML += `${coinAttributesHtml}<br>
                                         <span class="status-text">派遣中</span>`;
                     } else {
                         li.classList.add('selectable-monster', 'resting-monster');
-                        li.innerHTML = `<strong><span class="monster-name-color">${monster.name}</span></strong><br>
-                                        ${coinAttributesHtml}<br>
+                        li.innerHTML += `${coinAttributesHtml}<br>
                                         <span class="status-text">待機中</span>`;
                     }
                 }
             } else {
                 // 通常表示
-                li.innerHTML = `<strong><span class="monster-name-color">${monster.name}</span></strong><br>
-                                ${coinAttributesHtml}<br>`;
+                li.innerHTML += `${coinAttributesHtml}<br>`;
             }
             
             partyList.appendChild(li);
@@ -437,6 +541,17 @@ export function updateUI(gameData, coinAttributesMap, enemies = [], currentArea 
     } else {
         console.error("DOM element 'party-list' not found in updateUI.");
     }
+
+    // プレイヤーの生い立ち画像の更新
+    if (playerLifeImage) {
+        if (gameData.playerLife && imagePaths[gameData.playerLife.name]) {
+            playerLifeImage.src = imagePaths[gameData.playerLife.name];
+            playerLifeImage.style.display = 'block'; // 画像を表示
+        } else {
+            playerLifeImage.style.display = 'none'; // 画像を非表示
+        }
+    }
+
 
     // 敵情報の更新
     if (enemyInfo && enemyList) {
@@ -507,6 +622,7 @@ export function waitForButtonClick() {
                 hideMonsterTooltip(); // ツールチップを非表示にする
                 hideAreaTooltip(); // エリアツールチップも非表示にする
                 hideCoinTooltip(); // コインツールチップも非表示にする
+                hideLifeTooltip(); // 生い立ちツールチップも非表示にする
                 actionArea.removeEventListener('click', listener);
                 resolve(button.dataset.value);
             }
@@ -565,10 +681,11 @@ export function createButtons(buttons) {
  * 戦闘ログを含むモーダルポップアップを表示し、ユーザーが閉じるのを待つ。
  * @param {string} title - ポップアップのタイトル。
  * @param {string} content - ポップアップに表示するHTMLコンテンツ（戦闘ログ）。
+ * @param {string[]} enemyNames - 敵モン娘の名前の配列。
  * @param {string} buttonText - 閉じるボタンのテキスト。
  * @returns {Promise<void>} ユーザーが閉じるボタンをクリックしたときに解決するPromise。
  */
-export function showCombatLogModal(title, content, buttonText = '閉じる') {
+export function showCombatLogModal(title, content, enemyNames, buttonText = '閉じる') {
     return new Promise(resolve => {
         const overlay = document.createElement('div');
         overlay.classList.add('modal-overlay');
@@ -576,8 +693,30 @@ export function showCombatLogModal(title, content, buttonText = '閉じる') {
         const modal = document.createElement('div');
         modal.classList.add('modal-content');
 
-        const titleElement = document.createElement('h3');
+        const titleElement = document.createElement('h4');
         titleElement.innerHTML = title;
+        modal.appendChild(titleElement);
+
+        const enemyImagesContainer = document.createElement('div');
+        enemyImagesContainer.classList.add('enemy-images-container'); // 新しいクラスを追加
+
+        // 敵モン娘の画像をコンテナに追加
+        if (enemyNames && enemyNames.length > 0) {
+            enemyNames.forEach(name => {
+                const img = document.createElement('img');
+                img.src = imagePaths[name] || './image/default.png'; // imagePathsからパスを取得、フォールバック
+                img.alt = name;
+                img.style.backgroundColor = 'rgb(100, 100, 100)';
+                img.width = 128;
+                img.height = 128;
+                img.style.imageRendering = 'pixelated';
+                img.style.margin = '2px'; // 画像間のスペース
+                img.style.borderRadius = '8px'; // 角丸
+                img.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)'; // 影
+                enemyImagesContainer.appendChild(img);
+            });
+            modal.appendChild(enemyImagesContainer); // 画像コンテナをモーダルに追加
+        }
 
         const contentElement = document.createElement('div');
         contentElement.classList.add('modal-log-content'); // スクロール可能なエリア
@@ -592,14 +731,10 @@ export function showCombatLogModal(title, content, buttonText = '閉じる') {
             resolve();
         });
 
-        modal.appendChild(titleElement);
         modal.appendChild(contentElement);
         modal.appendChild(closeButton);
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
-
-        // コンテンツが溢れる場合にスクロールを最下部に移動
-        //contentElement.scrollTop = contentElement.scrollHeight;
     });
 }
 
@@ -608,15 +743,18 @@ export function showCombatLogModal(title, content, buttonText = '閉じる') {
  * @param {DragEvent} event - ドラッグイベントオブジェクト。
  */
 function handleDragStart(event) {
-    // ドラッグ中の要素を保持
-    draggedItem = event.target;
-    // dataTransferオブジェクトにドラッグする要素の情報を設定
-    event.dataTransfer.setData('text/plain', event.target.dataset.index);
-    event.dataTransfer.effectAllowed = 'move'; // 移動のみ許可
-    // ドラッグ中の要素にスタイルを適用
-    setTimeout(() => {
-        event.target.classList.add('dragging');
-    }, 0);
+    // ドラッグ中の要素が画像であっても、親の.monster-card要素をドラッグ対象とする
+    const targetCard = event.target.closest('.monster-card');
+    if (targetCard) {
+        draggedItem = targetCard;
+        // dataTransferオブジェクトにドラッグする要素の情報を設定
+        event.dataTransfer.setData('text/plain', targetCard.dataset.index);
+        event.dataTransfer.effectAllowed = 'move'; // 移動のみ許可
+        // ドラッグ中の要素にスタイルを適用
+        setTimeout(() => {
+            targetCard.classList.add('dragging');
+        }, 0);
+    }
 }
 
 /**
@@ -626,11 +764,10 @@ function handleDragStart(event) {
 function handleDragOver(event) {
     event.preventDefault(); // デフォルトの動作（ドロップ禁止）を防止
     // 有効なドロップターゲットの場合にスタイルを適用
-    if (event.target.classList.contains('monster-card') && event.target !== draggedItem) {
-        event.target.classList.add('drag-over');
-        event.dataTransfer.dropEffect = 'move';
-    } else if (event.target.classList.contains('empty-slot')) {
-        event.target.classList.add('drag-over');
+    // closest を使用して、イベントターゲットが li.monster-card または .empty-slot の子要素であっても親を検出する
+    const targetItem = event.target.closest('.monster-card, .empty-slot');
+    if (targetItem && targetItem !== draggedItem) {
+        targetItem.classList.add('drag-over');
         event.dataTransfer.dropEffect = 'move';
     } else {
         event.dataTransfer.dropEffect = 'none';
@@ -642,7 +779,11 @@ function handleDragOver(event) {
  * @param {DragEvent} event - ドラッグイベントオブジェクト。
  */
 function handleDragLeave(event) {
-    event.target.classList.remove('drag-over');
+    // closest を使用して、イベントターゲットが li.monster-card または .empty-slot の子要素であっても親を検出する
+    const targetItem = event.target.closest('.monster-card, .empty-slot');
+    if (targetItem) {
+        targetItem.classList.remove('drag-over');
+    }
 }
 
 /**
@@ -658,9 +799,12 @@ function handleDragLeave(event) {
  */
 function handleDrop(event, gameData, coinAttributesMap, enemies, currentArea, isSelectionPhase, selectableMonsterPool, maxPartySize) {
     event.preventDefault();
-    event.target.classList.remove('drag-over');
+    // closest を使用して、イベントターゲットが li.monster-card または .empty-slot の子要素であっても親を検出する
+    const targetItem = event.target.closest('.monster-card, .empty-slot');
+    if (targetItem) {
+        targetItem.classList.remove('drag-over');
+    }
 
-    const targetItem = event.target.closest('.monster-card, .empty-slot'); // ドロップされた要素
     if (!targetItem || draggedItem === targetItem) {
         return; // 無効なドロップ、または同じ要素へのドロップ
     }

@@ -2,12 +2,13 @@
 
 let audioContext;
 let currentSource; // 現在再生中の音楽のAudioBufferSourceNode
-let musicPaths = {}; // musicPaths.jsonから読み込んだパスを格納
+let soundPaths = {}; // 効果音ファイルパスと設定
+let musicPaths = {}; // 音楽ファイルパスと設定
 let musicGainNode; // 音楽の音量調節用GainNode
 let sfxGainNode;   // 効果音の音量調節用GainNode
 
 /**
- * 音楽プレイヤーを初期化し、音楽ファイルのパスを読み込み、音量スライダーのイベントリスナーを設定します。
+ * 音楽プレイヤーを初期化し、音楽ファイルのパスと音量設定を読み込み、音量スライダーのイベントリスナーを設定します。
  */
 export async function initMusicPlayer() {
     try {
@@ -23,13 +24,21 @@ export async function initMusicPlayer() {
         sfxGainNode = audioContext.createGain();
         sfxGainNode.connect(audioContext.destination);
 
-        // musicPaths.jsonを読み込み、パスを保存
-        const response = await fetch('./musicPaths.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        // musicPaths.jsonを読み込み、パスと音量設定を保存
+        const musicResponse = await fetch('./musicPaths.json');
+        if (!musicResponse.ok) {
+            throw new Error(`HTTP error! status: ${musicResponse.status}`);
         }
-        musicPaths = await response.json();
+        musicPaths = await musicResponse.json();
         console.log("Music paths loaded:", musicPaths); // Debug log
+
+        // soundPaths.jsonを読み込み、パスと音量設定を保存
+        const soundResponse = await fetch('./soundPaths.json');
+        if (!soundResponse.ok) {
+            throw new Error(`HTTP error! status: ${soundResponse.status}`);
+        }
+        soundPaths = await soundResponse.json();
+        console.log("Sound paths loaded:", soundPaths); // Debug log
 
         // スライダー要素を取得
         const musicVolumeSlider = document.getElementById('music-volume');
@@ -56,11 +65,11 @@ export async function initMusicPlayer() {
 }
 
 /**
- * 指定されたレベルの音楽を再生します。
+ * 指定された音楽を再生します。
  * 既に音楽が再生中の場合は、現在の音楽を停止してから新しい音楽を再生します。
- * @param {string} level - 再生する音楽のレベル (例: 'レベル1', 'レベル2')
+ * @param {string} name - 再生する音楽の名前
  */
-export async function playMusic(level) {
+export async function playMusic(name) {
     if (!audioContext || !musicGainNode) {
         console.error("AudioContext or musicGainNode is not initialized.");
         return;
@@ -71,15 +80,15 @@ export async function playMusic(level) {
         stopMusic();
     }
 
-    const path = musicPaths[level];
-    if (!path) {
-        console.error(`Music path not found for level: ${level}`);
+    const musicInfo = musicPaths[name];
+    if (!musicInfo || !musicInfo.path) {
+        console.error(`Music path not found for level: ${name}`);
         return;
     }
 
     try {
-        console.log(`Attempting to load and play music: ${path}`); // Debug log
-        const response = await fetch(path);
+        console.log(`Attempting to load and play music: ${musicInfo.path}`); // Debug log
+        const response = await fetch(musicInfo.path);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -89,16 +98,23 @@ export async function playMusic(level) {
         currentSource = audioContext.createBufferSource();
         currentSource.buffer = audioBuffer;
         currentSource.loop = true; // ループを有効にする
-        currentSource.loopStart = 4; // 4秒からループ開始
-        currentSource.loopEnd = 8; // 8秒でループ終了
+        currentSource.loopStart = musicInfo.start;
+        currentSource.loopEnd = musicInfo.end;
 
-        // MusicGainNodeに接続
-        currentSource.connect(musicGainNode);
+        // 各音楽ファイルに設定された基本音量を適用
+        if (musicInfo.volume !== undefined) {
+            const tempGainNode = audioContext.createGain();
+            tempGainNode.gain.value = musicInfo.volume; // 個別の音量
+            currentSource.connect(tempGainNode);
+            tempGainNode.connect(musicGainNode); // マスター音量（スライダーで設定）
+        } else {
+            currentSource.connect(musicGainNode);
+        }
 
         currentSource.start(0); // すぐに再生開始
-        console.log(`Playing music: ${level}`); // Debug log
+        console.log(`Playing music: ${name}`); // Debug log
     } catch (error) {
-        console.error(`Error playing music for level ${level}:`, error);
+        console.error(`Error playing music for name ${name}:`, error);
     }
 }
 
@@ -121,16 +137,22 @@ export function stopMusic() {
 
 /**
  * 効果音を再生します。
- * @param {string} sfxPath - 再生する効果音のパス。
+ * @param {string} sfxName - 再生する効果音の名前。
  */
-export async function playSfx(sfxPath) {
+export async function playSfx(sfxName) {
     if (!audioContext || !sfxGainNode) {
         console.error("AudioContext or sfxGainNode is not initialized for SFX.");
         return;
     }
 
+    const sfxInfo = soundPaths[sfxName];
+    if (!sfxInfo || !sfxInfo.path) {
+        console.error(`Sound effect path not found for: ${sfxName}`);
+        return;
+    }
+
     try {
-        const response = await fetch(sfxPath);
+        const response = await fetch(sfxInfo.path);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -139,12 +161,22 @@ export async function playSfx(sfxPath) {
 
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
-        source.connect(sfxGainNode); // 効果音用GainNodeに接続
+
+        // 各効果音ファイルに設定された基本音量を適用
+        if (sfxInfo.volume !== undefined) {
+            const tempGainNode = audioContext.createGain();
+            tempGainNode.gain.value = sfxInfo.volume; // 個別の音量
+            source.connect(tempGainNode);
+            tempGainNode.connect(sfxGainNode); // マスター音量（スライダーで設定）
+        } else {
+            source.connect(sfxGainNode); // 効果音用GainNodeに接続
+        }
+
         source.start(0);
         source.onended = () => {
             source.disconnect(); // 再生終了後にリソースを解放
         };
     } catch (error) {
-        console.error(`Error playing sound effect: ${sfxPath}`, error);
+        console.error(`Error playing sound effect: ${sfxInfo.path}`, error);
     }
 }

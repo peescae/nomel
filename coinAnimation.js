@@ -35,19 +35,6 @@ export async function playCoinTossAnimation(random) {
         return;
     }
 
-    // soundPaths.json から効果音のパスを読み込む
-    let soundPaths;
-    try {
-        const response = await fetch('./soundPaths.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        soundPaths = await response.json();
-    } catch (error) {
-        console.error("soundPaths.json の読み込み中にエラーが発生しました:", error);
-        // 効果音の読み込みに失敗してもアニメーションは続行
-    }
-
     // コインの数 (今回は1枚のコイントスを想定)
     const numberOfCoins = 1;
 
@@ -74,9 +61,7 @@ export async function playCoinTossAnimation(random) {
     const originalLaunchHeight = 300;
 
     // コイントスの効果音を再生
-    if (soundPaths && soundPaths["コイントス"]) {
-        playSfx(soundPaths["コイントス"]).catch(e => console.error("コイントスの効果音の再生に失敗しました:", e));
-    }
+    playSfx("コイントス").catch(e => console.error("コイントスの効果音の再生に失敗しました:", e));
 
     for (let i = 0; i < numberOfCoins; i++) {
         const coinContainer = document.createElement('div');

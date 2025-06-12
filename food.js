@@ -17,8 +17,7 @@ export function updateEstimatedFoodGain(game, expeditionParty, currentArea) {
     let estimatedFoodGained = 0;
     if (currentArea) { // currentAreaが選択されている場合のみ計算
         expeditionParty.forEach(monster => {
-            // 硬貨1枚につき1食料
-            let monsterFoodContribution = monster.totalCoins * GAME_CONSTANTS.FOOD_PER_COIN;
+            let monsterFoodContribution = GAME_CONSTANTS.FOOD_SUPPLY;
 
             // 漁の硬貨を水の硬貨として扱うための調整
             const effectiveAreaCoinAttributesForFood = [...currentArea.coinAttributes]; // areaCoins を使用

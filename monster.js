@@ -5,7 +5,7 @@
  */
 
 // 必要なデータをインポート
-import { monsterTemplates, coinAttributesMap } from './data.js'; 
+import { monsterTemplates, coinAttributesMap, GAME_CONSTANTS } from './data.js'; 
 
 // モン娘の基本構造
 export class Monster {
@@ -13,7 +13,7 @@ export class Monster {
      * 新しいモン娘インスタンスを作成する。
      * @param {string} name - モン娘の名前。
      * @param {string[]} coinAttributes - モン娘が持つ硬貨属性の配列。
-     * @param {number} upkeep - モン娘の維持費。
+     * @param {number} upkeep - モン娘の食費。
      * @param {boolean} hasBeenSentToBattle - ボス戦などで一度派遣されたかどうか。
      */
     constructor(name, coinAttributes, upkeep = 0, hasBeenSentToBattle = false) {
@@ -34,6 +34,7 @@ export class Monster {
 
 /**
  * 重複しないランダムなモン娘を生成する。
+ * @param {object[]} game - ゲームの状態を管理するオブジェクト。
  * @param {number} count - 生成するモン娘の数。
  * @param {object[]} templatesPool - 選択肢の元となるモン娘テンプレートの配列。
  * @param {boolean} useWeighting - 重み付けを適用するかどうか。
@@ -42,7 +43,7 @@ export class Monster {
  * @param {Function} random - 疑似乱数生成関数。
  * @returns {Monster[]} 生成されたモン娘の配列。
  */
-export function getUniqueRandomMonsters(count, templatesPool, useWeighting = false, minCoins = 0, maxCoins = Infinity, random) {
+export function getUniqueRandomMonsters(game, count, templatesPool, useWeighting = false, minCoins = 0, maxCoins = Infinity, random) {
     let currentAvailableTemplates = [...templatesPool]; // 渡されたプールをコピーして使用
 
     // 硬貨枚数によるフィルタリングを最初に行う
@@ -56,14 +57,37 @@ export function getUniqueRandomMonsters(count, templatesPool, useWeighting = fal
     const uniqueMonsters = [];
 
     // 硬貨枚数に応じた重み付けマップ
-    const weights = {
-        3: 100,
-        4: 40,
-        5: 10,
-        6: 4,
-        7: 2,
-        8: 1
-    };
+    let weights;
+    if (game.days === 0) {
+        weights = {
+            3: 200,
+            4: 80,
+            5: 10,
+            6: 4,
+            7: 2,
+            8: 1
+        };
+    }
+    else if (game.days < GAME_CONSTANTS.BOSS_DAYS) {
+        weights = {
+            3: 100,
+            4: 40,
+            5: 10,
+            6: 4,
+            7: 2,
+            8: 1
+        };
+    }
+    else {
+        weights = {
+            3: 40,
+            4: 20,
+            5: 10,
+            6: 4,
+            7: 2,
+            8: 1
+        };
+    }
 
     for (let i = 0; i < count; i++) {
         if (currentAvailableTemplates.length === 0) {
@@ -123,7 +147,7 @@ export function getUniqueRandomMonsters(count, templatesPool, useWeighting = fal
  */
 export function generateAreaSpecificEnemies(count, currentArea, currentDays, random) {
     // 現在の日数に応じて敵の最大硬貨枚数を決定
-    const maxCoinsAllowed = 3 + Math.floor((currentDays - 1) / 4); // 4日ごとに1体増加
+    const maxCoinsAllowed = 3 + Math.floor((currentDays - 1) / GAME_CONSTANTS.ENEMY_COIN_SCALING_DAYS);
 
     // フィルターされたモン娘テンプレートリストを作成 (enemy属性を持たないもののみ)
     const availableMonsterTemplates = monsterTemplates.filter(template => 
