@@ -60,8 +60,8 @@ export function getUniqueRandomMonsters(game, count, templatesPool, useWeighting
     let weights;
     if (game.days === 0) {
         weights = {
-            3: 200,
-            4: 80,
+            3: 400,
+            4: 100,
             5: 10,
             6: 4,
             7: 2,
@@ -80,11 +80,11 @@ export function getUniqueRandomMonsters(game, count, templatesPool, useWeighting
     }
     else {
         weights = {
-            3: 40,
-            4: 20,
-            5: 10,
-            6: 4,
-            7: 2,
+            3: 8,
+            4: 8,
+            5: 4,
+            6: 2,
+            7: 1,
             8: 1
         };
     }
@@ -192,7 +192,7 @@ export function generateAreaSpecificEnemies(count, currentArea, currentDays, ran
  */
 export function generateSpecialRaidEnemies(count, currentDays, random) {
     // 現在の日数に応じて敵の最大硬貨枚数を決定 (通常の敵と同じスケーリング)
-    const maxCoinsAllowed = 3 + Math.floor((currentDays - 1) / 4);
+    const maxCoinsAllowed = 3 + Math.floor((currentDays - 1) / GAME_CONSTANTS.ENEMY_COIN_SCALING_DAYS);
 
     // 名前に「グーラ」を含むモン娘テンプレートのみを対象とする
     const goolaTemplates = monsterTemplates.filter(template => 

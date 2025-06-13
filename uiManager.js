@@ -14,6 +14,7 @@ let monsterTooltipElement; // ポップアップ表示用の単一のtooltip要�
 let areaTooltipElement;    // エリア情報ポップアップ用の単一のtooltip要素
 let coinTooltipElement;    // 硬貨情報ポップアップ用の単一のtooltip要素
 let lifeTooltipElement;    // 生い立ち情報ポップアップ用の単一のtooltip要素
+let favourTooltipElement;  // 神の寵愛情報ポップアップ用の単一のtooltip要素
 
 let draggedItem = null; // ドラッグ中の要素を保持
 
@@ -147,21 +148,62 @@ function createLifeTooltipElement() {
 }
 
 /**
+ * 神の寵愛情報ポップアップ要素を生成する。
+ * 初回のみ呼び出され、bodyにアタッチされる。
+ */
+function createFavourTooltipElement() {
+    if (!favourTooltipElement) { // 既に存在する場合は作成しない
+        favourTooltipElement = document.createElement('div');
+        favourTooltipElement.id = 'favour-tooltip';
+        favourTooltipElement.style.cssText = `
+            position: absolute;
+            background-color: #3b3f47;
+            border: 1px solid #FFD700; /* 神の寵愛の色（例: ゴールド）*/
+            border-radius: 5px;
+            padding: 10px;
+            color: #f8f8f2;
+            font-size: 0.9em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            z-index: 1000;
+            max-width: 250px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            visibility: hidden; /* 初期状態では非表示 */
+        `;
+        document.body.appendChild(favourTooltipElement);
+    }
+}
+
+/**
  * ポップアップの位置を計算し設定するヘルパー関数。
  * @param {HTMLElement} tooltipElement - ポップアップのDOM要素。
- * @param {HTMLElement} targetElement - マウスオーバーされたDOM要素。
+ * @param {HTMLElement|MouseEvent} targetOrEvent - マウスオーバーされたDOM要素またはマウスイベントオブジェクト。
  */
-function positionTooltip(tooltipElement, targetElement) {
-    const rect = targetElement.getBoundingClientRect();
+function positionTooltip(tooltipElement, targetOrEvent) {
+    let clientX, clientY;
+
+    // targetOrEvent がマウスイベントオブジェクトであるか（clientXプロパティを持つか）をチェック
+    if (targetOrEvent && typeof targetOrEvent.clientX === 'number' && typeof targetOrEvent.clientY === 'number') {
+        // マウスイベントの場合、その座標を使用
+        clientX = targetOrEvent.clientX;
+        clientY = targetOrEvent.clientY;
+    } else {
+        // DOM要素の場合、その要素のgetBoundingClientRect()を使用
+        const rect = targetOrEvent.getBoundingClientRect();
+        clientX = rect.right; // デフォルトで要素の右端
+        clientY = rect.top;    // デフォルトで要素の上端
+    }
+
+    let left = clientX + 10; // マウスポインタまたは要素の右から10px
+    let top = clientY + 10;  // マウスポインタまたは要素の下から10px
+
     const tooltipWidth = tooltipElement.offsetWidth;
     const tooltipHeight = tooltipElement.offsetHeight;
 
-    let left = rect.right + 10; // ターゲット要素の右から10px
-    let top = rect.top;
-
     // 画面の右端からはみ出さないように調整
     if (left + tooltipWidth > window.innerWidth - 20) { // 右端に20pxのマージン
-        left = rect.left - tooltipWidth - 10; // ターゲット要素の左に表示
+        left = clientX - tooltipWidth - 10; // マウスポインタまたは要素の左に表示
         if (left < 20) { // 左端からもはみ出す場合
             left = (window.innerWidth - tooltipWidth) / 2; // 中央に表示
         }
@@ -272,6 +314,18 @@ export function showLifeTooltip(lifeData, targetElement) {
 }
 
 /**
+ * 神の寵愛情報ポップアップを表示する。
+ * @param {MouseEvent} event - マウスイベントオブジェクト。
+ */
+export function showFavourTooltip(event) {
+    createFavourTooltipElement(); // ポップアップ要素が存在しない場合は作成
+    if (!favourTooltipElement) return;
+
+    favourTooltipElement.innerHTML = `<h4>神の寵愛</h4><p>ここに表示されている硬貨を持つ仲間の戦力値を加算する。</p>`;
+    positionTooltip(favourTooltipElement, event); // マウスイベントオブジェクトを渡す
+}
+
+/**
  * モン娘の硬貨情報ポップアップを非表示にする。
  */
 export function hideMonsterTooltip() {
@@ -308,6 +362,16 @@ export function hideLifeTooltip() {
     if (lifeTooltipElement) {
         lifeTooltipElement.style.opacity = '0';
         lifeTooltipElement.style.visibility = 'hidden';
+    }
+}
+
+/**
+ * 神の寵愛情報ポップアップを非表示にする。
+ */
+export function hideFavourTooltip() {
+    if (favourTooltipElement) {
+        favourTooltipElement.style.opacity = '0';
+        favourTooltipElement.style.visibility = 'hidden';
     }
 }
 
@@ -580,14 +644,32 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
 
     // 神の寵愛硬貨の表示を更新
     if (favourDisplay) {
+        // イベントリスナーを定義（名前付き関数として定義し、削除時に参照できるようにする）
+        const favourMouseOverListener = (event) => {
+            showFavourTooltip(event); // マウスイベントオブジェクトを直接渡す
+        };
+        const favourMouseOutListener = () => {
+            hideFavourTooltip();
+        };
+
         if (gameData.favour && gameData.favour.length > 0) {
-            favourDisplay.innerHTML = '神の寵愛: ';
+            // 既存のリスナーを削除してから追加（重複登録防止）
+            favourDisplay.removeEventListener('mouseover', favourMouseOverListener);
+            favourDisplay.removeEventListener('mouseout', favourMouseOutListener);
+
+            favourDisplay.addEventListener('mouseover', favourMouseOverListener);
+            favourDisplay.addEventListener('mouseout', favourMouseOutListener);
+
+            favourDisplay.innerHTML = '<strong>神の寵愛:</strong> ';
             // ここで game.js の createCoinTooltipHtml を呼び出す
             favourDisplay.innerHTML += gameData.favour.map(coinId => window.createCoinTooltipHtml(coinId, coinAttributesMap)).join(' ');
             favourDisplay.style.display = 'flex'; // 硬貨がある場合に表示
         } else {
+            // 硬貨がない場合はイベントリスナーを削除し、非表示にする
+            favourDisplay.removeEventListener('mouseover', favourMouseOverListener);
+            favourDisplay.removeEventListener('mouseout', favourMouseOutListener);
             favourDisplay.innerHTML = '';
-            favourDisplay.style.display = 'none'; // 硬貨がない場合は非表示
+            favourDisplay.style.display = 'none';
         }
     }
 
@@ -623,6 +705,7 @@ export function waitForButtonClick() {
                 hideAreaTooltip(); // エリアツールチップも非表示にする
                 hideCoinTooltip(); // コインツールチップも非表示にする
                 hideLifeTooltip(); // 生い立ちツールチップも非表示にする
+                hideFavourTooltip(); // 神の寵愛ツールチップも非表示にする
                 actionArea.removeEventListener('click', listener);
                 resolve(button.dataset.value);
             }

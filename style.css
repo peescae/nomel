@@ -107,12 +107,16 @@ strong {
     background-color: #4f535a;
     border-radius: 5px;
     display: flex;
-    font-size: 0.8em;
+    font-size: 0.5em;
     flex-wrap: wrap;
     text-align: left;
     align-items: center;
     vertical-align: middle;
     gap: 5px;
+}
+
+#favour strong {
+    font-size: 2.0em;
 }
 
 #game-messages {
@@ -648,7 +652,7 @@ button:active {
 
 /* Alchemy image style */
 .alchemy-image {
-    width: 80px; /* Adjust size as needed */
+    width: 128px; /* Adjust size as needed */
     height: auto;
     image-rendering: pixelated;
     display: none; /* 初期状態では非表示 */

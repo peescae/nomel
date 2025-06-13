@@ -62,7 +62,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
             // enemiesには常に1体の敵が渡される想定
             const availableMonstersDuel = party; // 決闘では全員選択可能
 
-            logMessage("あの娘と決闘させるモン娘を一人選んでね。");
+            logMessage("あの娘と決闘させるモン娘を一人選んでね！");
 
             // 決闘では1体のみ選択
             selectedPartyMonsters = await selectBattleParty(game, availableMonstersDuel, battleType);
@@ -351,11 +351,14 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
             const reductionFactor = Math.pow(GAME_CONSTANTS.RAID_FLOWER_REDUCTION_FACTOR, flowerHeads);
             currentFightFoodAllowance = Math.max(0, Math.ceil(currentFightFoodAllowance * reductionFactor));
             const reducedAmount = originalAllowance - currentFightFoodAllowance;
-            combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('flower', coinAttributesMap)}の力で、戦闘手当が ${reducedAmount} 減少しました！ (現在の手当: ${currentFightFoodAllowance})</p>`);
+            combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('flower', coinAttributesMap)}の力で、戦闘手当が ${reducedAmount} 減少しました！</p>`);
         }
 
         // 総戦闘手当の保持
         game.battleAllowance += currentFightFoodAllowance;
+
+        // 戦闘手当
+        combatLogMessages.push(`<p>戦闘手当: ${currentFightFoodAllowance}</p>`);
 
         // 総戦力値の比較
         combatLogMessages.push(`<p>味方総戦力値: ${partyActualCombatPower}, 敵総戦力値: ${enemyActualCombatPower}</p>`);
@@ -462,7 +465,7 @@ function calcTrapCoinPower(partyIndividualCombatPowers, enemyIndividualCombatPow
                 const originalPower = e.power;
                 e.power = Math.max(0, e.power - trapCoinCount);
                 if (originalPower !== e.power) {
-                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('trap', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」の戦力値が ${trapCoinCount} 減少しました！</p>`);
+                    combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('trap', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」の戦力値が ${trapCoinCount} 減少！</p>`);
                 }
             });
         }

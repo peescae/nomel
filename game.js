@@ -115,7 +115,7 @@ async function offerMonstersToJoin() {
     game.currentPhase = 'joinPhase';
 
     // 最初の選択: プレイヤーは必ず1体選ぶ必要がある
-    logMessage(`最初に雇う仲間を3人の中から選んでね。`);
+    logMessage(`最初に雇う仲間を選んでね。`);
     clearActionArea();
 
     let initialChoices = [];
@@ -199,17 +199,13 @@ async function offerMonstersToJoin() {
         }
 
         const chosenMonsterIndex = parseInt(choice);
-        if (chosenMonsterIndex >= 0 && chosenMonsterIndex < subsequentChoices.length) {
-            const chosenMonster = subsequentChoices[chosenMonsterIndex];
-            game.party.push(chosenMonster);
-            game.milk--;
-            // 加入の効果音を再生
-            playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
-            logMessage(`<span class="monster-name-color">${chosenMonster.name}</span> を雇ったよ！`);
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
-        } else {
-            logMessage("無効な選択です。");
-        }
+        const chosenMonster = subsequentChoices[chosenMonsterIndex];
+        game.party.push(chosenMonster);
+        game.milk--;
+        // 加入の効果音を再生
+        playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+        logMessage(`<span class="monster-name-color">${chosenMonster.name}</span> を雇ったよ！`);
+        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
     }
 
     // MAX_PARTY_SIZEになった時点で自動的に終了メッセージを表示
@@ -230,7 +226,7 @@ async function selectExplorationArea() {
     game.currentPhase = 'areaSelection';
 
     // 現在の日数に基づいて最大属性数を決定
-    const maxAttributesAllowed = 2 + Math.floor(game.days / 5);
+    const maxAttributesAllowed = 2 + Math.floor(game.days / GAME_CONSTANTS.AREA_COIN_SCALING_DAYS);
 
     // フィルターされた地形リストを作成
     const availableAreas = areaTypes.filter(area => area.coinAttributes.length <= maxAttributesAllowed);
@@ -288,17 +284,6 @@ async function sendMonstersOnExpedition(currentArea) {
     logMessage(`\n<div id="game-messages-phase">--- 探索派遣フェーズ ---</div>`);
     game.currentPhase = 'expeditionSelection';
 
-    if (game.party.length === 0) {
-        logMessage("仲間がいません。探索に派遣するモン娘がいません。");
-        const actionArea = document.getElementById('action-area');
-        actionArea.innerHTML = '<button data-value="continue">次へ</button>';
-        await waitForButtonClick();
-        game.estimatedFoodGain = 0; // 予想食料をリセット
-        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して表示を反映
-        game.currentPhase = 'idle'; // フェーズをアイドルに戻す
-        return { expeditionParty: [], restingParty: [] };
-    }
-
     // ログメッセージの硬貨属性をツールチップ対応にする
     const areaCoinHtml = currentArea.coinAttributes.map(attrId => {
         // createCoinTooltipHtml を呼び出して、スタイル付きのHTMLを生成
@@ -306,8 +291,7 @@ async function sendMonstersOnExpedition(currentArea) {
     }).join(' ');
 
     logMessage(`探索に派遣するモン娘を選ぼう！　地域の硬貨属性 (${areaCoinHtml}) に適したモン娘を選んでね。`);
-    logMessage("仲間モン娘の枠をクリックして派遣/待機を切り替えてね。");
-
+ 
     const expeditionParty = []; // 派遣されるモン娘
     // restingParty は動的に計算されるため、ここでは初期化しない
 
@@ -1056,13 +1040,13 @@ function endGame(isCleared) {
         playMusic('勝利');
         logMessage("やったね！　王子を救出したよ！");
         logMessage("<br>");
-        logMessage("そして王様から頂いた100億円で高名な錬金術師雇い、遂に僕もフラスコの外に出られたよ！");
+        logMessage("そして100億円で高名な錬金術師を雇い、遂に僕もフラスコの外に出られたよ！");
         logMessage("おじさん、ありがとう！");
         
         // ゲームクリア後のホムンクルスと錬金術師の表示
         if (homunculusImage && imagePaths["外に出たホムンクルス"]) {
             homunculusImage.src = imagePaths["外に出たホムンクルス"];
-            homunculusImage.style.width = '200px'; // 画像サイズの調整
+            homunculusImage.style.width = '256px'; // 画像サイズの調整
             homunculusImage.style.height = 'auto'; // 画像サイズの調整
             homunculusImage.style.borderRadius = '0'; // 円形を解除
             homunculusImage.style.boxShadow = 'none'; // シャドウを解除
@@ -1079,7 +1063,6 @@ function endGame(isCleared) {
         playSfx("ハッピーエンド").catch(e => console.error("ハッピーエンドの効果音の再生に失敗しました:", e));
 
         logMessage("おじさんはモン娘達に食べられてしまいました。");
-        logMessage("ハッピーエンド❤");
     }
     const actionArea = document.getElementById('action-area');
     if (actionArea) actionArea.innerHTML = '<button data-value="restart">ゲームを最初からやり直す</button>';
@@ -1175,7 +1158,6 @@ async function startFinalBossBattle() {
         }
     }
 
-    logMessage("全てのラスボスを打ち破り、王子を救出しました！");
     endGame(true); // ゲームクリア
 }
 
@@ -1339,7 +1321,7 @@ async function gameLoop() {
         }
 
         if (campResult === 'recovered') {
-            logMessage("おじさんのこくまろミルクのパワーで冒険を続行するよ！");
+            logMessage("おじさんのミルクパワーで冒険を続行するよ！");
         }
 
         updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // 1日の終了後、UIを通常状態に戻すためにもう一度呼び出し
