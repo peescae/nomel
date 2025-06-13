@@ -103,7 +103,7 @@ const game = {
 window.game = game;
 
 let random; // 疑似乱数生成関数
-let imagePaths;
+let imagePaths; // 画像パスを保持する変数
 
 /**
  * １：モン娘の加入フェーズ (ゲーム開始時のみ)。
@@ -131,21 +131,23 @@ async function offerMonstersToJoin() {
     initialChoices.sort(() => 0.5 - random());
 
     const actionArea = document.getElementById('action-area');
-    initialChoices.forEach((monster, index) => {
+    for (const monster of initialChoices) {
         const button = document.createElement('button');
-        button.className = 'choice-button';
-        button.innerHTML = `<span class="monster-name-color">${monster.name}</span><br>
-                            ${monster.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ')}`;
-        button.dataset.value = index.toString();
+        button.className = 'choice-button monster-choice-button'; 
+        const imageUrl = imagePaths[monster.name] || './image/default.png'; // 画像パスを取得、なければデフォルト画像
+        button.innerHTML = `<img src="${imageUrl}" alt="${monster.name}" class="monster-image">`;
+        button.dataset.monsterName = monster.name; // ツールチップ表示用に名前をdata属性に保存
+        button.dataset.value = monster.name; // クリックされたモン娘の名前を返すようにする
         actionArea.appendChild(button);
 
         // マウスイベントリスナー
         button.addEventListener('mouseover', (event) => showMonsterTooltip(monster, event.currentTarget, coinAttributesMap));
         button.addEventListener('mouseout', hideMonsterTooltip);
-    });
+    }
 
-    const initialChoiceIndex = parseInt(await waitForButtonClick());
-    const chosenInitialMonster = initialChoices[initialChoiceIndex];
+
+    const initialChoiceName = await waitForButtonClick();
+    const chosenInitialMonster = initialChoices.find(m => m.name === initialChoiceName);
     game.party.push(chosenInitialMonster);
     game.milk--;
     // 加入の効果音を再生
@@ -170,18 +172,20 @@ async function offerMonstersToJoin() {
         subsequentChoices.sort(() => 0.5 - random());
 
         clearActionArea(); // 各ループの開始時にクリア
-        subsequentChoices.forEach((monster, index) => {
+        for (const monster of subsequentChoices) {
             const button = document.createElement('button');
-            button.className = 'choice-button';
-            button.innerHTML = `<span class="monster-name-color">${monster.name}</span><br>
-                                ${monster.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ')}`;
-            button.dataset.value = index.toString(); // エリアのインデックスを返す
+            button.className = 'choice-button monster-choice-button'; // 新しいクラスを追加
+            const imageUrl = imagePaths[monster.name] || './image/default.png';
+            button.innerHTML = `<img src="${imageUrl}" alt="${monster.name}" class="monster-image">`;
+            button.dataset.monsterName = monster.name;
+            button.dataset.value = monster.name; // クリックされたモン娘の名前を返すようにする
             actionArea.appendChild(button);
 
             // マウスイベントリスナー
             button.addEventListener('mouseover', (event) => showMonsterTooltip(monster, event.currentTarget, coinAttributesMap));
             button.addEventListener('mouseout', hideMonsterTooltip);
-        });
+        }
+
 
         // MAX_PARTY_SIZE未満の場合のみ「仲間加入を終了」ボタンを表示
         if (game.party.length < GAME_CONSTANTS.MAX_PARTY_SIZE) {
@@ -191,15 +195,14 @@ async function offerMonstersToJoin() {
             actionArea.appendChild(finishButton);
         }
 
-        const choice = await waitForButtonClick();
+        const choiceName = await waitForButtonClick();
 
-        if (choice === 'finish') {
+        if (choiceName === 'finish') {
             logMessage("モン娘の勧誘を打ち切ったよ。");
             break; // ループを抜ける
         }
 
-        const chosenMonsterIndex = parseInt(choice);
-        const chosenMonster = subsequentChoices[chosenMonsterIndex];
+        const chosenMonster = subsequentChoices.find(m => m.name === choiceName);
         game.party.push(chosenMonster);
         game.milk--;
         // 加入の効果音を再生
@@ -553,11 +556,11 @@ async function handleRaid(restingParty, currentArea) {
             recruitableEnemies.forEach((enemy, index) => {
                 const button = document.createElement('button');
                 button.className = 'choice-button';
-                // モン娘全体のツールチップは残し、個々の硬貨のツールチップを削除
-                // getCoinAttributeName を直接使用して、ツールチップ属性なしで硬貨名を表示
-                const enemyCoinHtml = enemy.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ');
-                button.innerHTML = `<span class="monster-name-color">${enemy.name}</span> ( ${enemyCoinHtml} ) を仲間にする`;
-                button.dataset.value = index.toString();
+                // ここを修正: モン娘の名前と硬貨の表示を画像に置き換える
+                const imageUrl = imagePaths[enemy.name] || './image/default.png';
+                button.innerHTML = `<img src="${imageUrl}" alt="${enemy.name}" class="monster-image">`;
+                button.dataset.monsterName = enemy.name;
+                button.dataset.value = enemy.name; // クリックされたモン娘の名前を返すようにする
                 actionArea.appendChild(button);
 
                 // モン娘全体のツールチップイベントリスナーをボタンに直接付与
@@ -575,8 +578,7 @@ async function handleRaid(restingParty, currentArea) {
                 playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
                 logMessage("敵を勧誘せずに先に進むよ。");
             } else {
-                const chosenEnemyIndex = parseInt(choice);
-                const chosenEnemy = recruitableEnemies[chosenEnemyIndex];
+                const chosenEnemy = recruitableEnemies.find(m => m.name === choice);
                 if (game.playerLife.name === '炉裏魂' && chosenEnemy.coinAttributes.length > game.coinSizeLimit) {
                     // NGの効果音を再生
                     playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));

@@ -58,7 +58,7 @@ function createMonsterTooltipElement() {
             z-index: 1000;
             max-width: 250px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            visibility: hidden; /* 初期状態では非表示 */
+            visibility: hidden;
         `;
         document.body.appendChild(monsterTooltipElement);
     }
@@ -113,7 +113,7 @@ function createCoinTooltipElement() {
             z-index: 1000;
             max-width: 250px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            visibility: hidden; /* 初期状態では非表示 */
+            visibility: hidden;
         `;
         document.body.appendChild(coinTooltipElement);
     }
@@ -141,7 +141,7 @@ function createLifeTooltipElement() {
             z-index: 1000;
             max-width: 250px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            visibility: hidden; /* 初期状態では非表示 */
+            visibility: hidden;
         `;
         document.body.appendChild(lifeTooltipElement);
     }
@@ -169,7 +169,7 @@ function createFavourTooltipElement() {
             z-index: 1000;
             max-width: 250px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            visibility: hidden; /* 初期状態では非表示 */
+            visibility: hidden;
         `;
         document.body.appendChild(favourTooltipElement);
     }
@@ -288,7 +288,7 @@ export function showAreaTooltip(area, targetElement, coinAttributesMap) {
  * @param {Array} coinAttributesMap - data.jsから提供されるcoinAttributesMap。
  */
 export function showCoinTooltip(event, coinId, coinAttributesMap) {
-    createCoinTooltipElement(); // ポップアップ要素が存在しない場合は作成
+    createCoinTooltipElement();
     if (!coinTooltipElement) return;
 
     const coinInfo = coinAttributesMap.find(c => c.id === coinId);
@@ -306,7 +306,7 @@ export function showCoinTooltip(event, coinId, coinAttributesMap) {
  * @param {HTMLElement} targetElement - マウスオーバーされたDOM要素 (例: img#player-life-image)。
  */
 export function showLifeTooltip(lifeData, targetElement) {
-    createLifeTooltipElement(); // ポップアップ要素が存在しない場合は作成
+    createLifeTooltipElement();
     if (!lifeTooltipElement) return;
 
     lifeTooltipElement.innerHTML = `<h4>おじさんは ${lifeData.name}</h4><p>${lifeData.help}</p>`;
@@ -318,7 +318,7 @@ export function showLifeTooltip(lifeData, targetElement) {
  * @param {MouseEvent} event - マウスイベントオブジェクト。
  */
 export function showFavourTooltip(event) {
-    createFavourTooltipElement(); // ポップアップ要素が存在しない場合は作成
+    createFavourTooltipElement();
     if (!favourTooltipElement) return;
 
     favourTooltipElement.innerHTML = `<h4>神の寵愛</h4><p>ここに表示されている硬貨を持つ仲間の戦力値を加算する。</p>`;
@@ -549,6 +549,8 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
 
             // 硬貨属性のHTMLを生成
             const coinAttributesHtml = `<div class="coin-attributes-wrapper" style="display: ${showCoinsInPartyList ? 'flex' : 'none'};">${monster.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ')}</div>`;
+            li.innerHTML += coinAttributesHtml;
+
 
             // 選択フェーズの場合、クリック可能にする
             if (isSelectionPhase) {
@@ -559,34 +561,45 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
                         // ここで enemies は selectedParty を表す
                         if (enemies.includes(monster)) { 
                             li.classList.add('dispatch-monster'); // 派遣中スタイル
-                            li.innerHTML += `${coinAttributesHtml}<br>
-                                            <span class="status-text">派遣中</span>`;
+                            const statusText = document.createElement('span');
+                            statusText.classList.add('status-text');
+                            statusText.textContent = '派遣中';
+                            li.appendChild(statusText);
                         } else {
                             li.classList.add('resting-monster'); // 待機中スタイル
-                            li.innerHTML += `${coinAttributesHtml}<br>
-                                            <span class="status-text">待機中</span>`;
+                            const statusText = document.createElement('span');
+                            statusText.classList.add('status-text');
+                            statusText.textContent = '待機中';
+                            li.appendChild(statusText);
                         }
                     } else {
                         // 選択可能プールに含まれていない、またはhasBeenSentToBattleがtrue
                         li.classList.add('unavailable-monster');
-                        li.innerHTML += `${coinAttributesHtml}<br>
-                                        <span class="status-text" style="color: #888888;">使用済み</span>`; // 暗い色で表示
+                        const statusText = document.createElement('span');
+                        statusText.classList.add('status-text');
+                        statusText.style.color = '#888888';
+                        statusText.textContent = '使用済み'; // 暗い色で表示
+                        li.appendChild(statusText);
                     }
                 } else if (gameData.currentPhase === 'expeditionSelection') { // 通常の探索派遣フェーズ
                     // ここで enemies は expeditionParty を表す
                      if (enemies.includes(monster)) {
                         li.classList.add('selectable-monster', 'dispatch-monster');
-                        li.innerHTML += `${coinAttributesHtml}<br>
-                                        <span class="status-text">派遣中</span>`;
+                        const statusText = document.createElement('span');
+                        statusText.classList.add('status-text');
+                        statusText.textContent = '派遣中';
+                        li.appendChild(statusText);
                     } else {
                         li.classList.add('selectable-monster', 'resting-monster');
-                        li.innerHTML += `${coinAttributesHtml}<br>
-                                        <span class="status-text">待機中</span>`;
+                        const statusText = document.createElement('span');
+                        statusText.classList.add('status-text');
+                        statusText.textContent = '待機中';
+                        li.appendChild(statusText);
                     }
                 }
             } else {
                 // 通常表示
-                li.innerHTML += `${coinAttributesHtml}<br>`;
+                // 名前と硬貨は既に上記で追加されているため、ここでは何も追加しない
             }
             
             partyList.appendChild(li);
@@ -627,18 +640,33 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
             enemies.forEach(enemy => {
                 const li = document.createElement('li');
                 li.className = 'monster-card enemy-card';
+                // 敵の画像を追加
+                const enemyImage = document.createElement('img');
+                const enemyImageUrl = imagePaths[enemy.name] || './image/default.png';
+                enemyImage.src = enemyImageUrl;
+                enemyImage.alt = enemy.name;
+                enemyImage.width = 128;
+                enemyImage.height = 128;
+                enemyImage.classList.add('monster-image');
+                li.appendChild(enemyImage);
+
+                const monsterNameDiv = document.createElement('h3'); // h3タグを使用
+                monsterNameDiv.innerHTML = `<span class="monster-name-color">${enemy.name}</span>`;
+                li.appendChild(monsterNameDiv);
+
                 const coinsHtml = enemy.coinAttributes.map(attrId => { // enemy.coinAttributes を使用
                     const attr = coinAttributesMap.find(c => c.id === attrId);
                     return `<span class="coin-attribute" style="background-color: ${attr.color};">${attr.name}</span>`;
                 }).join('');
-                li.innerHTML = `
-                    <h3>${enemy.name}</h3>
-                    <div class="monster-coins">${coinsHtml}</div>
-                `;
+                const monsterCoinsDiv = document.createElement('div');
+                monsterCoinsDiv.classList.add('monster-coins');
+                monsterCoinsDiv.innerHTML = coinsHtml;
+                li.appendChild(monsterCoinsDiv);
+
                 enemyList.appendChild(li);
             });
         } else {
-            enemyInfo.style.display = 'none'; // 敵がいない場合非表示
+            if (enemyInfo) enemyInfo.style.display = 'none'; // 敵がいない場合非表示
         }
     }
 
