@@ -99,7 +99,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
 
     let maxFightAttempts = GAME_CONSTANTS.RAID_MAX_ATTEMPTS;
     if (game.playerLife.name === '軍人') {
-        maxFightAttempts++;
+        maxFightAttempts += 2;
     }
 
     let fightAttempts = 0;

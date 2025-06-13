@@ -22,6 +22,7 @@ import {
 import { conductFight } from './battle.js';
 import { updateEstimatedFoodGain } from './food.js';
 import { initMusicPlayer, playMusic, playSfx, stopMusic } from './musicManager.js'; // musicManagerをインポート
+import { displayGuideMessage } from './helpUI.js'; // helpUIをインポート
 
 // coinAttributesMapをグローバルスコープで利用可能にする
 // HTMLのonmouseover属性などから直接呼び出すため
@@ -227,6 +228,7 @@ async function selectExplorationArea() {
     logMessage(`<br/>`);
     logMessage(`\n<div id="game-messages-phase">--- 探索エリア選択フェーズ ---</div>`);
     game.currentPhase = 'areaSelection';
+    displayGuideMessage('探索エリア選択フェーズ'); // ガイドメッセージを表示
 
     // 現在の日数に基づいて最大属性数を決定
     const maxAttributesAllowed = 2 + Math.floor(game.days / GAME_CONSTANTS.AREA_COIN_SCALING_DAYS);
@@ -285,6 +287,7 @@ async function selectExplorationArea() {
 async function sendMonstersOnExpedition(currentArea) {
     logMessage(`<br/>`);
     logMessage(`\n<div id="game-messages-phase">--- 探索派遣フェーズ ---</div>`);
+    displayGuideMessage('探索派遣フェーズ');
     game.currentPhase = 'expeditionSelection';
 
     // ログメッセージの硬貨属性をツールチップ対応にする
@@ -424,6 +427,7 @@ async function handleRaid(restingParty, currentArea) {
             break;
 
         case 'duel':
+            displayGuideMessage('決闘');
             logMessage("決闘を申し込まれたよ！");
             numEnemies = 1;
             enemies = generateAreaSpecificEnemies(numEnemies, currentArea, game.days + 1, random);
@@ -630,6 +634,7 @@ async function handleRaid(restingParty, currentArea) {
 async function handleBossBattle(currentArea) {
     logMessage(`<br/>`);
     logMessage("\n--- ボス戦開始！ ---");
+    displayGuideMessage('ボス戦');
     game.currentPhase = 'bossBattle';
 
     playMusic('ボス');
@@ -675,6 +680,8 @@ async function handleBossBattle(currentArea) {
     game.food += foodRewards;
     logMessage(`食料を${foodRewards}獲得したよ！`);
     updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+
+    stopMusic();
 
     return true; // 全てのガーゴイルに勝利
 }
@@ -825,6 +832,7 @@ async function handleFoodSacrificeEvent() {
     clearActionArea();
     logMessage(`<br/>`);
     logMessage(`\n<div id="game-messages-phase">--- 祈り ---</div>`);
+    displayGuideMessage('祈り');
 
     const foodCost = GAME_CONSTANTS.FOOD_SACRIFICE_COST + game.days * GAME_CONSTANTS.FOOD_SACRIFICE_RATE;
     logMessage(`神様に食料 ${foodCost} を捧げる？ (現在の食料: ${game.food})`);
@@ -871,6 +879,7 @@ async function handleFoodSacrificeEvent() {
         }
 
         logMessage(`以下の硬貨の中から1つを選んでね。`);
+        displayGuideMessage('硬貨選択');
         // actionArea is already cleared by previous clearActionArea()
         chosenCoins.forEach((coin, index) => {
             const button = document.createElement('button');
@@ -1039,6 +1048,8 @@ function endGame(isCleared) {
     const leftAlchemyImage = document.getElementById('left-alchemy-image');
 
     if (isCleared) {
+        displayGuideMessage('クリア');
+
         playMusic('勝利');
         logMessage("やったね！　王子を救出したよ！");
         logMessage("<br>");
@@ -1048,7 +1059,7 @@ function endGame(isCleared) {
         // ゲームクリア後のホムンクルスと錬金術師の表示
         if (homunculusImage && imagePaths["外に出たホムンクルス"]) {
             homunculusImage.src = imagePaths["外に出たホムンクルス"];
-            homunculusImage.style.width = '256px'; // 画像サイズの調整
+            homunculusImage.style.width = '128px'; // 画像サイズの調整
             homunculusImage.style.height = 'auto'; // 画像サイズの調整
             homunculusImage.style.borderRadius = '0'; // 円形を解除
             homunculusImage.style.boxShadow = 'none'; // シャドウを解除
@@ -1061,6 +1072,8 @@ function endGame(isCleared) {
         }
 
     } else {
+        displayGuideMessage('ハッピーエンド');
+
         // ハッピーエンドの効果音を再生
         playSfx("ハッピーエンド").catch(e => console.error("ハッピーエンドの効果音の再生に失敗しました:", e));
 
@@ -1082,6 +1095,7 @@ function endGame(isCleared) {
  */
 async function startFinalBossBattle() {
     logMessage("連邦の中枢に到達！");
+    displayGuideMessage('ボス戦');
     game.currentPhase = 'finalBossAreaSelection';
 
     playMusic('ボス');
@@ -1226,6 +1240,8 @@ async function gameLoop() {
     toggleInitialSetupArea(false); // 初期セットアップエリアを非表示にする
     clearActionArea();
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して、初期セットアップエリアが非表示になったことを反映
+
+    displayGuideMessage('初期表示');
 
     await offerMonstersToJoin();
     // 初期加入フェーズで食料が尽きることは通常ないが、念のためチェック
@@ -1442,7 +1458,6 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
     if (toggleCoinDisplayButton) {
         toggleCoinDisplayButton.addEventListener('click', () => {
             toggleCoinDisplay();
-            // 削除: updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
         });
     }
 
@@ -1501,6 +1516,12 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
                 }
             }
 
+            // enemy属性を除く全ての硬貨をフィルタリング
+            const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy');
+            // ランダムに1つ神の寵愛を取得
+            const chosenCoin = availableCoins[Math.floor(random() * availableCoins.length)];
+            game.favour.push(chosenCoin.id); // game.favour に硬貨のIDを追加
+
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを通常状態に戻す
 
             playMusic('レベル1'); // ゲーム開始時にレベル1の音楽を再生
@@ -1514,3 +1535,4 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
     // 初期UI表示
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
 });
+

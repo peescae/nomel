@@ -197,7 +197,7 @@ export const FINAL_BOSS_ENCOUNTERS = {
 export const life = [
     { name: '農家', help: '野営時の総食料消費量に0.8を乗算する。' },
     { name: '冒険家', help: '地形の選択肢の数に2を加算する。' },
-    { name: '軍人', help: 'コイントスの回数に1を加算する。' },
+    { name: '軍人', help: 'コイントスの回数に2を加算する。' },
     { name: '炉裏魂', help: '野営時のミルクの生産量に1を加算する。硬貨の枚数が4枚以上のモン娘を仲間にできない。' },
 ];
 
@@ -211,9 +211,9 @@ export const GAME_CONSTANTS = {
     RAID_BASE_SPECIAL_CHANCE: 0.2, // 特殊襲撃の基本確率
     RAID_BASE_DUEL_CHANCE: 0.2, // 決闘の基本確率
     RAID_BASE_NORMAL_CHANCE: 0.5,   // 通常襲撃の基本確率
-    FAVOUR_EVENT_CHANCE: 0.2, // 神の寵愛の基本確率
-    SISTER_EVENT_CHANCE: 0.2, // 妹加入の基本確率
-    RECRUIT_EVENT_CHANCE: 0.5, // 仲間勧誘の基本確率
+    FAVOUR_EVENT_CHANCE: 0.15, // 神の寵愛の基本確率
+    SISTER_EVENT_CHANCE: 0.15, // 妹加入の基本確率
+    RECRUIT_EVENT_CHANCE: 0.6, // 仲間勧誘の基本確率
     RECRUIT_EVENT_CHANCE_OF_SPECIAL: 0.2, // 仲間勧誘イベントで、全ての種族が抽選の対象になる確率
     RAID_MAX_ATTEMPTS: 3, // 襲撃時のコイントス最大試行回数
     FOOD_SUPPLY: 3, // 探索時の食料獲得量

@@ -20,7 +20,7 @@ export class Monster {
         this.name = name;
         this.coinAttributes = coinAttributes;
         this.upkeep = upkeep;
-        this.hasBeenSentToBattle = hasBeenSentToBattle; // 新しいプロパティを追加
+        this.hasBeenSentToBattle = hasBeenSentToBattle;
     }
 
     /**

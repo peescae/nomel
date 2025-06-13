@@ -634,6 +634,8 @@ button:active {
     display: flex; /* Flexboxを追加 */
     align-items: center; /* 垂直方向中央揃え */
     gap: 10px; /* 画像間のスペース */
+    /* ホムンクルスの左側に表示されるように変更 */
+    /* flex-direction: row-reverse; */ /* この行を削除 */
 }
 
 #homunculus-image {
@@ -652,10 +654,26 @@ button:active {
 
 /* Alchemy image style */
 .alchemy-image {
-    width: 128px; /* Adjust size as needed */
+    width: 80px; /* Adjust size as needed */
     height: auto;
     image-rendering: pixelated;
     display: none; /* 初期状態では非表示 */
+}
+
+/* 吹き出しスタイル */
+.speech-bubble {
+    position: relative;
+    background-color: #e0e0e0; /* 吹き出しの背景色 */
+    color: #333; /* 吹き出しの文字色 */
+    padding: 10px 15px;
+    border-radius: 15px;
+    font-size: 1.0em;
+    white-space: normal;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    min-width: 40px; /* 最小幅 */
+    text-align: left;
+    vertical-align: top;
+    margin-bottom: 50px;
 }
 
 
@@ -739,6 +757,16 @@ button:active {
 
     .player-life-image {
         width: 80px; /* Adjust for smaller screens */
+    }
+
+    #homunculus-container {
+        flex-direction: column; /* 縦並びにする */
+        gap: 5px; /* 画像間のスペースを調整 */
+    }
+
+    .speech-bubble {
+        margin-right: 0; /* 水平方向のマージンをリセット */
+        margin-bottom: 10px; /* 吹き出しとホムンクルスの縦方向の距離 */
     }
 }
 
