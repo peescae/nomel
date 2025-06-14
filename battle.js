@@ -13,6 +13,7 @@ import {
 } from './uiManager.js';
 import { coinAttributesMap, GAME_CONSTANTS } from './data.js';
 import { playSfx } from './musicManager.js'; // playSfxをインポート
+import { showSpeechBubble } from './speechBubbleManager.js';
 
 /**
  * 戦闘を処理する関数。ボス戦と通常戦闘の両方に対応。
@@ -385,6 +386,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
 
     // 戦闘結果の最終判定
     if (wins >= 1) {
+        showSpeechBubble(selectedPartyMonsters, '勝利', random);
         logMessage("勝利！");
         // スタイルを解除
         selectedPartyMonsters.forEach(monster => {
@@ -395,6 +397,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
         });
         return { won: true, foodGain: 0, milkGain: 0 };
     } else {
+        showSpeechBubble(selectedPartyMonsters, '敗北', random);
         logMessage("負けちゃった！");
         clearActionArea();
         const actionArea = document.getElementById('action-area');

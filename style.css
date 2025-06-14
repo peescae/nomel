@@ -676,6 +676,41 @@ button:active {
     margin-bottom: 50px;
 }
 
+/* 新しいモン娘吹き出しのスタイル */
+#monster-speech-bubble {
+    position: fixed;
+    top: 50%; /* 画面中央に配置 */
+    left: 50%;
+    transform: translate(-50%, -50%); /* 中央寄せ */
+    background-color: #fff;
+    color: #333;
+    padding: 10px 30px;
+    border-radius: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 3000; /* 最前面に表示 */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 10px; /* 画像とテキストの間のスペース */
+    max-width: 640px; /* 最大幅を設定 */
+    text-align: left;
+}
+
+.monster-speech-image {
+    width: 128px; /* モン娘画像のサイズ */
+    height: auto;
+    image-rendering: pixelated;
+    object-fit: contain;
+}
+
+#monster-speech-bubble span {
+    flex-grow: 1;
+    font-size: 1.2em;
+    line-height: 1.4;
+}
+
 
 /* Player life image style */
 .player-life-image {
@@ -767,6 +802,21 @@ button:active {
     .speech-bubble {
         margin-right: 0; /* 水平方向のマージンをリセット */
         margin-bottom: 10px; /* 吹き出しとホムンクルスの縦方向の距離 */
+    }
+
+    #monster-speech-bubble {
+        max-width: 300px; /* モバイルでの最大幅 */
+        padding: 10px 15px;
+        gap: 10px;
+    }
+
+    .monster-speech-image {
+        width: 60px;
+        height: 60px;
+    }
+
+    #monster-speech-bubble span {
+        font-size: 0.9em;
     }
 }
 
@@ -862,5 +912,20 @@ button:active {
     .player-life-image {
         width: 60px; /* Further adjust for smaller screens */
         min-width: unset;
+    }
+
+    #monster-speech-bubble {
+        max-width: 250px; /* さらに小さいモバイルでの最大幅 */
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    .monster-speech-image {
+        width: 50px;
+        height: 50px;
+    }
+
+    #monster-speech-bubble span {
+        font-size: 0.8em;
     }
 }

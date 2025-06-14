@@ -15,12 +15,14 @@ export class Monster {
      * @param {string[]} coinAttributes - モン娘が持つ硬貨属性の配列。
      * @param {number} upkeep - モン娘の食費。
      * @param {boolean} hasBeenSentToBattle - ボス戦などで一度派遣されたかどうか。
+     * @param {string} talker - モン娘の話し方タイプ（例: '真面目', '元気'）。
      */
-    constructor(name, coinAttributes, upkeep = 0, hasBeenSentToBattle = false) {
+    constructor(name, coinAttributes, upkeep = 0, hasBeenSentToBattle = false, talker = 'none') {
         this.name = name;
         this.coinAttributes = coinAttributes;
         this.upkeep = upkeep;
         this.hasBeenSentToBattle = hasBeenSentToBattle;
+        this.talker = talker; // 新しいtalkerフィールド
     }
 
     /**
@@ -127,7 +129,11 @@ export function getUniqueRandomMonsters(game, count, templatesPool, useWeighting
         }
 
         if (selectedTemplate) {
-            uniqueMonsters.push(new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep));
+            // talker属性をランダムに選択してMonsterインスタンスに渡す
+            const chosenTalker = selectedTemplate.talker && selectedTemplate.talker.length > 0 
+                ? selectedTemplate.talker[Math.floor(random() * selectedTemplate.talker.length)]
+                : 'none'; // talkerが定義されていない場合は'none'
+            uniqueMonsters.push(new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker));
             // 選択されたモン娘を、この関数呼び出し内の今後の選択肢から除外
             currentAvailableTemplates = currentAvailableTemplates.filter(t => t.name !== selectedTemplate.name);
         } else {
@@ -178,7 +184,11 @@ export function generateAreaSpecificEnemies(count, currentArea, currentDays, ran
             // フィルターされた全体のリストから選ぶ
             selectedTemplate = availableMonsterTemplates[Math.floor(random() * availableMonsterTemplates.length)];
         }
-        generatedEnemies.push(new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep));
+        // talker属性をランダムに選択してMonsterインスタンスに渡す
+        const chosenTalker = selectedTemplate.talker && selectedTemplate.talker.length > 0
+            ? selectedTemplate.talker[Math.floor(random() * selectedTemplate.talker.length)]
+            : 'none'; // talkerが定義されていない場合は'none'
+        generatedEnemies.push(new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker));
     }
     return generatedEnemies;
 }
@@ -207,7 +217,11 @@ export function generateSpecialRaidEnemies(count, currentDays, random) {
         }
         const randomIndex = Math.floor(random() * goolaTemplates.length);
         const selectedTemplate = goolaTemplates[randomIndex];
-        generatedEnemies.push(new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep));
+        // talker属性をランダムに選択してMonsterインスタンスに渡す
+        const chosenTalker = selectedTemplate.talker && selectedTemplate.talker.length > 0
+            ? selectedTemplate.talker[Math.floor(random() * selectedTemplate.talker.length)]
+            : 'none'; // talkerが定義されていない場合は'none'
+        generatedEnemies.push(new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker));
     }
     return generatedEnemies;
 }

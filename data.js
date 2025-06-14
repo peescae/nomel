@@ -33,53 +33,53 @@ export const coinAttributesMap = [
 // モン娘のテンプレート定義
 // 各モン娘の名前、所持硬貨、食費を含む。
 export const monsterTemplates = [
-    { name: 'インプ', coins: ['sky', 'dark', 'magic'], upkeep: 3 },
-    { name: 'ゴブリン', coins: ['plain', 'forest', 'dark'], upkeep: 3 },
-    { name: 'コロポックル', coins: ['forest', 'snow', 'fishing'], upkeep: 3 },
-    { name: 'フェアリー', coins: ['forest', 'flower', 'sky'], upkeep: 3 },
-    { name: 'ユキンコ', coins: ['snow', 'snow', 'snow'], upkeep: 3 },
-    { name: 'シェリーコート', coins: ['water', 'water', 'water'], upkeep: 3 },
-    { name: 'ローン', coins: ['water', 'snow', 'fishing'], upkeep: 3 },
-    { name: 'グレムリン', coins: ['thunder', 'thunder', 'thunder'], upkeep: 3 },
-    { name: 'チョンチョン', coins: ['blood', 'sky', 'sky'], upkeep: 3 },
-    { name: 'アルラウネ', coins: ['forest', 'flower', 'poison'], upkeep: 3 },
-    { name: 'マイコニド', coins: ['forest', 'dark', 'poison'], upkeep: 3 },
-    { name: 'ユキオンナ', coins: ['snow', 'snow', 'magic', 'magic'], upkeep: 4 },
-    { name: 'ルサルカ', coins: ['water', 'water', 'magic', 'magic'], upkeep: 4 },
-    { name: 'ドリアード', coins: ['forest', 'forest', 'magic', 'magic'], upkeep: 4 },
-    { name: 'ネコマタ', coins: ['forest', 'forest', 'dark', 'magic'], upkeep: 4 },
-    { name: 'ラミア', coins: ['scale', 'forest', 'dark', 'blood'], upkeep: 4 },
-    { name: 'メリサンド', coins: ['scale', 'scale', 'water', 'sky'], upkeep: 4 },
-    { name: 'ハーピー', coins: ['forest', 'forest', 'sky', 'sky'], upkeep: 4 },
-    { name: 'セイレーン', coins: ['water', 'water', 'sky', 'sky'], upkeep: 4 },
-    { name: 'セルキー', coins: ['water', 'snow', 'fishing', 'fishing', 'iron'], upkeep: 5 },
-    { name: 'ジョローグモ', coins: ['forest', 'forest', 'dark', 'dark', 'trap'], upkeep: 5 },
-    { name: 'セントール', coins: ['plain', 'plain', 'plain', 'bow', 'bow'], upkeep: 5 },
-    { name: 'ワーウルフ', coins: ['plain', 'plain', 'forest', 'forest', 'iron'], upkeep: 5 },
-    { name: 'リザードマン', coins: ['scale', 'scale', 'forest', 'forest', 'iron'], upkeep: 5 },
-    { name: 'サハギン', coins: ['scale', 'scale', 'water', 'water', 'iron'], upkeep: 5 },
-    { name: 'オニ', coins: ['oni', 'oni', 'oni', 'forest', 'iron'], upkeep: 5 },
-    { name: 'ヴィーヴル', coins: ['scale', 'dark', 'dark', 'sky', 'sky'], upkeep: 5 },
-    { name: 'キクロプス', coins: ['oni', 'oni', 'oni', 'thunder', 'thunder', 'iron', 'iron'], upkeep: 7 },
-    { name: 'カリブディス', coins: ['water', 'water', 'water', 'water', 'power', 'power', 'power', 'power'], upkeep: 8 },
-    { name: 'ドラゴニュート', coins: ['scale', 'scale', 'sky', 'sky', 'fire', 'fire', 'poison', 'poison'], upkeep: 8 },
-    { name: 'グーラLv1', coins: ['enemy', 'oni', 'blood'], upkeep: 3 },
-    { name: 'グーラLv2', coins: ['enemy', 'oni', 'blood', 'power'], upkeep: 4 },
-    { name: 'グーラLv3', coins: ['enemy', 'oni', 'blood', 'power', 'power'], upkeep: 5 },
-    { name: 'ガーゴイル', coins: ['enemy', 'iron', 'iron', 'iron', 'sky'], upkeep: 5 },
-    { name: 'サキュバス', coins: ['enemy', 'flower', 'dark', 'magic'], upkeep: 4 },
-    { name: 'アテルイ', coins: ['enemy', 'snow', 'oni', 'oni', 'iron', 'iron', 'bow', 'bow'], upkeep: 8 },
-    { name: 'スライム', coins: ['enemy', 'water', 'water', 'flower', 'flower', 'poison', 'poison', 'poison', 'poison', 'poison', 'poison', 'poison'], upkeep: 12 },
-    { name: 'スフィンクス', coins: ['enemy', 'plain', 'plain', 'plain', 'sky', 'sky', 'sky', 'magic', 'magic', 'magic'], upkeep: 10 },
-    { name: 'エキドナLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark'], upkeep: 10 },
-    { name: 'エキドナLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark'], upkeep: 12 },
-    { name: 'エキドナLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark', 'dark'], upkeep: 14 },
-    { name: 'ニドヘグLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark'], upkeep: 20 },
-    { name: 'ニドヘグLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark', 'dark'], upkeep: 24 },
-    { name: 'ニドヘグLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark', 'dark', 'dark'], upkeep: 28 },
-    { name: 'セドナLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'snow', 'snow'], upkeep: 10 },
-    { name: 'セドナLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'water', 'snow', 'snow', 'snow'], upkeep: 12 },
-    { name: 'セドナLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'water', 'water', 'snow', 'snow', 'snow', 'snow'], upkeep: 14 },
+    { name: 'インプ', coins: ['sky', 'dark', 'magic'], upkeep: 3, talker: ['元気', '俺っ娘'] },
+    { name: 'ゴブリン', coins: ['plain', 'forest', 'dark'], upkeep: 3, talker: ['元気', '俺っ娘'] },
+    { name: 'コロポックル', coins: ['forest', 'snow', 'fishing'], upkeep: 3, talker: ['真面目', '元気', '真面目元気', 'ゆるい'] },
+    { name: 'フェアリー', coins: ['forest', 'flower', 'sky'], upkeep: 3, talker: ['元気', 'ゆるい'] },
+    { name: 'ユキンコ', coins: ['snow', 'snow', 'snow'], upkeep: 3, talker: ['真面目', 'ゆるい'] },
+    { name: 'シェリーコート', coins: ['water', 'water', 'water'], upkeep: 3, talker: ['元気', 'ゆるい'] },
+    { name: 'ローン', coins: ['water', 'snow', 'fishing'], upkeep: 3, talker: ['元気', 'ゆるい'] },
+    { name: 'グレムリン', coins: ['thunder', 'thunder', 'thunder'], upkeep: 3, talker: ['元気', '俺っ娘'] },
+    { name: 'チョンチョン', coins: ['blood', 'sky', 'sky'], upkeep: 3, talker: ['真面目', '真面目元気', '上品'] },
+    { name: 'アルラウネ', coins: ['forest', 'flower', 'poison'], upkeep: 3, talker: ['真面目', '元気', '真面目元気', 'ゆるい', 'ぶっきらぼう', '上品'] },
+    { name: 'マイコニド', coins: ['forest', 'dark', 'poison'], upkeep: 3, talker: ['真面目', 'ゆるい', 'ぶっきらぼう', '上品'] },
+    { name: 'ユキオンナ', coins: ['snow', 'snow', 'magic', 'magic'], upkeep: 4, talker: ['真面目', 'ぶっきらぼう', '上品'] },
+    { name: 'ルサルカ', coins: ['water', 'water', 'magic', 'magic'], upkeep: 4, talker: ['真面目', '真面目元気', 'ぶっきらぼう', '上品'] },
+    { name: 'ドリアード', coins: ['forest', 'forest', 'magic', 'magic'], upkeep: 4, talker: ['真面目', 'ゆるい', 'ぶっきらぼう', '上品'] },
+    { name: 'ネコマタ', coins: ['forest', 'forest', 'dark', 'magic'], upkeep: 4, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう', '上品'] },
+    { name: 'ラミア', coins: ['scale', 'forest', 'dark', 'blood'], upkeep: 4, talker: ['真面目', 'ぶっきらぼう', '上品'] },
+    { name: 'メリサンド', coins: ['scale', 'scale', 'water', 'sky'], upkeep: 4, talker: ['真面目', '真面目元気', '上品'] },
+    { name: 'ハーピー', coins: ['forest', 'forest', 'sky', 'sky'], upkeep: 4, talker: ['元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう'] },
+    { name: 'セイレーン', coins: ['water', 'water', 'sky', 'sky'], upkeep: 4, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう', '上品'] },
+    { name: 'セルキー', coins: ['water', 'snow', 'fishing', 'fishing', 'iron'], upkeep: 5, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう'] },
+    { name: 'ジョローグモ', coins: ['forest', 'forest', 'dark', 'dark', 'trap'], upkeep: 5, talker: ['真面目', '上品'] },
+    { name: 'セントール', coins: ['plain', 'plain', 'plain', 'bow', 'bow'], upkeep: 5, talker: ['真面目', '真面目元気', '俺っ娘', 'ぶっきらぼう'] },
+    { name: 'ワーウルフ', coins: ['plain', 'plain', 'forest', 'forest', 'iron'], upkeep: 5, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう'] },
+    { name: 'リザードマン', coins: ['scale', 'scale', 'forest', 'forest', 'iron'], upkeep: 5, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう'] },
+    { name: 'サハギン', coins: ['scale', 'scale', 'water', 'water', 'iron'], upkeep: 5, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう'] },
+    { name: 'オニ', coins: ['oni', 'oni', 'oni', 'forest', 'iron'], upkeep: 5, talker: ['真面目', '元気', '真面目元気', '俺っ娘', 'ぶっきらぼう'] },
+    { name: 'ヴィーヴル', coins: ['scale', 'dark', 'dark', 'sky', 'sky'], upkeep: 5, talker: ['真面目', '真面目元気', '俺っ娘', 'ぶっきらぼう', '上品'] },
+    { name: 'キクロプス', coins: ['oni', 'oni', 'oni', 'thunder', 'thunder', 'iron', 'iron'], upkeep: 7, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう'] },
+    { name: 'カリブディス', coins: ['water', 'water', 'water', 'water', 'power', 'power', 'power', 'power'], upkeep: 8, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう', '上品'] },
+    { name: 'ドラゴニュート', coins: ['scale', 'scale', 'sky', 'sky', 'fire', 'fire', 'poison', 'poison'], upkeep: 8, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう', '上品'] },
+    { name: 'グーラLv1', coins: ['enemy', 'oni', 'blood'], upkeep: 3, talker: ['none'] },
+    { name: 'グーラLv2', coins: ['enemy', 'oni', 'blood', 'power'], upkeep: 4, talker: ['none'] },
+    { name: 'グーラLv3', coins: ['enemy', 'oni', 'blood', 'power', 'power'], upkeep: 5, talker: ['none'] },
+    { name: 'ガーゴイル', coins: ['enemy', 'iron', 'iron', 'iron', 'sky'], upkeep: 5, talker: ['none'] },
+    { name: 'サキュバス', coins: ['enemy', 'flower', 'dark', 'magic'], upkeep: 4, talker: ['none'] },
+    { name: 'アテルイ', coins: ['enemy', 'snow', 'oni', 'oni', 'iron', 'iron', 'bow', 'bow'], upkeep: 8, talker: ['none'] },
+    { name: 'スライム', coins: ['enemy', 'water', 'water', 'flower', 'flower', 'poison', 'poison', 'poison', 'poison', 'poison', 'poison', 'poison'], upkeep: 12, talker: ['none'] },
+    { name: 'スフィンクス', coins: ['enemy', 'plain', 'plain', 'plain', 'sky', 'sky', 'sky', 'magic', 'magic', 'magic'], upkeep: 10, talker: ['none'] },
+    { name: 'エキドナLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark'], upkeep: 10, talker: ['none'] },
+    { name: 'エキドナLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark'], upkeep: 12, talker: ['none'] },
+    { name: 'エキドナLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark', 'dark'], upkeep: 14, talker: ['none'] },
+    { name: 'ニドヘグLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark'], upkeep: 20, talker: ['none'] },
+    { name: 'ニドヘグLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark', 'dark'], upkeep: 24, talker: ['none'] },
+    { name: 'ニドヘグLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark', 'dark', 'dark'], upkeep: 28, talker: ['none'] },
+    { name: 'セドナLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'snow', 'snow'], upkeep: 10, talker: ['none'] },
+    { name: 'セドナLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'water', 'snow', 'snow', 'snow'], upkeep: 12, talker: ['none'] },
+    { name: 'セドナLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'water', 'water', 'snow', 'snow', 'snow', 'snow'], upkeep: 14, talker: ['none'] },
 ];
 
 // 地形タイプと対応する硬貨属性の定義
@@ -211,16 +211,16 @@ export const GAME_CONSTANTS = {
     RAID_BASE_SPECIAL_CHANCE: 0.2, // 特殊襲撃の基本確率
     RAID_BASE_DUEL_CHANCE: 0.2, // 決闘の基本確率
     RAID_BASE_NORMAL_CHANCE: 0.5,   // 通常襲撃の基本確率
-    FAVOUR_EVENT_CHANCE: 0.15, // 神の寵愛の基本確率
-    SISTER_EVENT_CHANCE: 0.15, // 妹加入の基本確率
-    RECRUIT_EVENT_CHANCE: 0.6, // 仲間勧誘の基本確率
+    FAVOUR_EVENT_CHANCE: 0.1, // 神の寵愛の基本確率
+    SISTER_EVENT_CHANCE: 0.1, // 妹加入の基本確率
+    RECRUIT_EVENT_CHANCE: 0.7, // 仲間勧誘の基本確率
     RECRUIT_EVENT_CHANCE_OF_SPECIAL: 0.2, // 仲間勧誘イベントで、全ての種族が抽選の対象になる確率
     RAID_MAX_ATTEMPTS: 3, // 襲撃時のコイントス最大試行回数
     FOOD_SUPPLY: 3, // 探索時の食料獲得量
     FOOD_PER_COIN: 1, // 硬貨1枚あたりの基本食料獲得量
     FOOD_BONUS_MATCH: 3, // 硬貨属性一致時の追加食料獲得量
-    FOOD_SACRIFICE_COST: 30, // 神に捧げる食料の基本量
-    FOOD_SACRIFICE_RATE: 3, // 神に捧げる食料の係数
+    TRADE_FOOD_INITIAL_COST: 30, // 食料交換の基本数量
+    TRADE_FOOD_SCALING_COST: 10, // 食料交換のスケーリング量
     RAID_TRAP_REDUCTION_FACTOR: 0.6, // 罠の硬貨による襲撃確率減少係数
     RAID_FLOWER_REDUCTION_FACTOR: 0.5, // 花の硬貨による戦闘手当減少係数
     ENEMY_COIN_SCALING_DAYS: 4, // 敵の硬貨枚数スケーリングの日間隔

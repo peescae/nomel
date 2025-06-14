@@ -178,32 +178,21 @@ function createFavourTooltipElement() {
 /**
  * ポップアップの位置を計算し設定するヘルパー関数。
  * @param {HTMLElement} tooltipElement - ポップアップのDOM要素。
- * @param {HTMLElement|MouseEvent} targetOrEvent - マウスオーバーされたDOM要素またはマウスイベントオブジェクト。
+ * @param {MouseEvent} event - マウスイベントオブジェクト。
  */
-function positionTooltip(tooltipElement, targetOrEvent) {
-    let clientX, clientY;
+function positionTooltip(tooltipElement, event) {
+    let clientX = event.clientX;
+    let clientY = event.clientY;
 
-    // targetOrEvent がマウスイベントオブジェクトであるか（clientXプロパティを持つか）をチェック
-    if (targetOrEvent && typeof targetOrEvent.clientX === 'number' && typeof targetOrEvent.clientY === 'number') {
-        // マウスイベントの場合、その座標を使用
-        clientX = targetOrEvent.clientX;
-        clientY = targetOrEvent.clientY;
-    } else {
-        // DOM要素の場合、その要素のgetBoundingClientRect()を使用
-        const rect = targetOrEvent.getBoundingClientRect();
-        clientX = rect.right; // デフォルトで要素の右端
-        clientY = rect.top;    // デフォルトで要素の上端
-    }
-
-    let left = clientX + 10; // マウスポインタまたは要素の右から10px
-    let top = clientY + 10;  // マウスポインタまたは要素の下から10px
+    let left = clientX + 10; // マウスポインタの右から10px
+    let top = clientY + 10;  // マウスポインタの下から10px
 
     const tooltipWidth = tooltipElement.offsetWidth;
     const tooltipHeight = tooltipElement.offsetHeight;
 
     // 画面の右端からはみ出さないように調整
     if (left + tooltipWidth > window.innerWidth - 20) { // 右端に20pxのマージン
-        left = clientX - tooltipWidth - 10; // マウスポインタまたは要素の左に表示
+        left = clientX - tooltipWidth - 10; // マウスポインタの左に表示
         if (left < 20) { // 左端からもはみ出す場合
             left = (window.innerWidth - tooltipWidth) / 2; // 中央に表示
         }
@@ -226,10 +215,10 @@ function positionTooltip(tooltipElement, targetOrEvent) {
 /**
  * モン娘の硬貨情報ポップアップを表示する。
  * @param {object} monster - 表示対象のモン娘オブジェクト。（Monsterクラスのインスタンス）
- * @param {HTMLElement} targetElement - マウスオーバーされたDOM要素 (例: li.monster-card)。
+ * @param {MouseEvent} event - マウスイベントオブジェクト。
  * @param {Array} coinAttributesMap - data.jsから提供されるcoinAttributesMap。
  */
-export function showMonsterTooltip(monster, targetElement, coinAttributesMap) {
+export function showMonsterTooltip(monster, event, coinAttributesMap) {
     createMonsterTooltipElement(); // ポップアップ要素が存在しない場合は作成
 
     let tooltipContent = `<h4>${monster.name}</h4>`;
@@ -246,16 +235,16 @@ export function showMonsterTooltip(monster, targetElement, coinAttributesMap) {
         });
     }
     monsterTooltipElement.innerHTML = tooltipContent;
-    positionTooltip(monsterTooltipElement, targetElement);
+    positionTooltip(monsterTooltipElement, event);
 }
 
 /**
  * エリアの硬貨情報ポップアップを表示する。
  * @param {object} area - 表示対象のエリアオブジェクト。
- * @param {HTMLElement} targetElement - マウスオーバーされたDOM要素 (例: button.choice-button)。
+ * @param {MouseEvent} event - マウスイベントオブジェクト。
  * @param {Array} coinAttributesMap - data.jsから提供されるcoinAttributesMap。
  */
-export function showAreaTooltip(area, targetElement, coinAttributesMap) {
+export function showAreaTooltip(area, event, coinAttributesMap) {
     createAreaTooltipElement(); // ポップアップ要素が存在しない場合は作成
     if (!areaTooltipElement) return; // 要素が作成されなかった場合は何もしない
 
@@ -278,7 +267,7 @@ export function showAreaTooltip(area, targetElement, coinAttributesMap) {
     }
 
     areaTooltipElement.innerHTML = tooltipContent;
-    positionTooltip(areaTooltipElement, targetElement);
+    positionTooltip(areaTooltipElement, event);
 }
 
 /**
@@ -297,20 +286,20 @@ export function showCoinTooltip(event, coinId, coinAttributesMap) {
     } else {
         coinTooltipElement.innerHTML = `<h4>${coinInfo.name}</h4><p><span class="coin-description">${coinInfo.help}</span></p>`;
     }
-    positionTooltip(coinTooltipElement, event.currentTarget);
+    positionTooltip(coinTooltipElement, event);
 }
 
 /**
  * プレイヤーの生い立ち情報ポップアップを表示する。
  * @param {object} lifeData - 表示対象の生い立ちオブジェクト。
- * @param {HTMLElement} targetElement - マウスオーバーされたDOM要素 (例: img#player-life-image)。
+ * @param {MouseEvent} event - マウスイベントオブジェクト。
  */
-export function showLifeTooltip(lifeData, targetElement) {
+export function showLifeTooltip(lifeData, event) {
     createLifeTooltipElement();
     if (!lifeTooltipElement) return;
 
     lifeTooltipElement.innerHTML = `<h4>おじさんは ${lifeData.name}</h4><p>${lifeData.help}</p>`;
-    positionTooltip(lifeTooltipElement, targetElement);
+    positionTooltip(lifeTooltipElement, event);
 }
 
 /**
@@ -488,7 +477,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
         const area = gameData.currentArea; // 現在のエリア情報をクロージャでキャプチャ
         currentAreaCoinsDisplay._tooltipMouseOverListener = (event) => {
             if (area) { // エリア情報がある場合のみツールチップを表示
-                showAreaTooltip(area, event.currentTarget, coinAttributesMap);
+                showAreaTooltip(area, event, coinAttributesMap); // イベントを渡す
             }
         };
         currentAreaCoinsDisplay._tooltipMouseOutListener = () => {
@@ -534,7 +523,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
             li.addEventListener('dragend', handleDragEnd);
 
             // マウスイベントリスナーを追加
-            li.addEventListener('mouseover', (event) => showMonsterTooltip(monster, event.currentTarget, coinAttributesMap));
+            li.addEventListener('mouseover', (event) => showMonsterTooltip(monster, event, coinAttributesMap)); // event を渡す
             li.addEventListener('mouseout', hideMonsterTooltip);
             
             // モン娘の画像を追加
@@ -563,7 +552,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
                             li.classList.add('dispatch-monster'); // 派遣中スタイル
                             const statusText = document.createElement('span');
                             statusText.classList.add('status-text');
-                            statusText.textContent = '派遣中';
+                            statusText.textContent = '出撃！';
                             li.appendChild(statusText);
                         } else {
                             li.classList.add('resting-monster'); // 待機中スタイル
@@ -621,9 +610,28 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
 
     // プレイヤーの生い立ち画像の更新
     if (playerLifeImage) {
+        // 既存のイベントリスナーを削除
+        if (playerLifeImage._tooltipMouseOverListener) {
+            playerLifeImage.removeEventListener('mouseover', playerLifeImage._tooltipMouseOverListener);
+        }
+        if (playerLifeImage._tooltipMouseOutListener) {
+            playerLifeImage.removeEventListener('mouseout', playerLifeImage._tooltipMouseOutListener);
+        }
+
         if (gameData.playerLife && imagePaths[gameData.playerLife.name]) {
             playerLifeImage.src = imagePaths[gameData.playerLife.name];
             playerLifeImage.style.display = 'block'; // 画像を表示
+
+            // 新しいイベントリスナーを追加
+            const lifeData = gameData.playerLife; // クロージャでキャプチャ
+            playerLifeImage._tooltipMouseOverListener = (event) => {
+                showLifeTooltip(lifeData, event); // イベントを渡す
+            };
+            playerLifeImage._tooltipMouseOutListener = () => {
+                hideLifeTooltip();
+            };
+            playerLifeImage.addEventListener('mouseover', playerLifeImage._tooltipMouseOverListener);
+            playerLifeImage.addEventListener('mouseout', playerLifeImage._tooltipMouseOutListener);
         } else {
             playerLifeImage.style.display = 'none'; // 画像を非表示
         }
