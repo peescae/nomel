@@ -22,9 +22,9 @@ export function updateEstimatedFoodGain(game, expeditionParty, currentArea) {
             // 漁の硬貨を水の硬貨として扱うための調整
             const effectiveAreaCoinAttributesForFood = [...currentArea.coinAttributes]; // areaCoins を使用
 
-            monster.coinAttributes.forEach(monsterCoinAttr => { // monster.coinAttributes を monster.coins に変更
+            monster.allCoins.forEach(monsterCoinAttr => {
                 let currentMonsterCoinAttr = monsterCoinAttr;
-                if (monsterCoinAttr === 'fishing' && currentArea.coinAttributes.includes('water')) { // areaCoins を使用
+                if (monsterCoinAttr === 'fishing' && effectiveAreaCoinAttributesForFood.includes('water')) {
                     currentMonsterCoinAttr = 'water'; // 擬似的に「水」として扱う
                 }
 

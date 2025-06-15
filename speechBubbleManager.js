@@ -88,5 +88,5 @@ export async function showSpeechBubble(party, category, random) {
     setTimeout(() => {
         speechBubbleElement.style.opacity = '0';
         speechBubbleElement.style.visibility = 'hidden';
-    }, 1400); // 1.4秒後に非表示
+    }, 1600); // 1.6秒後に非表示
 }

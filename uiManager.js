@@ -56,7 +56,7 @@ function createMonsterTooltipElement() {
             opacity: 0;
             transition: opacity 0.2s ease-in-out;
             z-index: 1000;
-            max-width: 250px;
+            max-width: 320px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             visibility: hidden;
         `;
@@ -84,7 +84,7 @@ function createAreaTooltipElement() {
             opacity: 0;
             transition: opacity 0.2s;
             z-index: 1000;
-            max-width: 250px;
+            max-width: 480px;
             word-wrap: break-word;
         `;
         document.body.appendChild(areaTooltipElement);
@@ -111,13 +111,14 @@ function createCoinTooltipElement() {
             opacity: 0;
             transition: opacity 0.2s ease-in-out;
             z-index: 1000;
-            max-width: 250px;
+            max-width: 320px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             visibility: hidden;
         `;
         document.body.appendChild(coinTooltipElement);
     }
 }
+
 
 /**
  * 生い立ち情報ポップアップ要素を生成する。
@@ -184,8 +185,8 @@ function positionTooltip(tooltipElement, event) {
     let clientX = event.clientX;
     let clientY = event.clientY;
 
-    let left = clientX + 10; // マウスポインタの右から10px
-    let top = clientY + 10;  // マウスポインタの下から10px
+    let left = clientX + 10;
+    let top = clientY + 10;
 
     const tooltipWidth = tooltipElement.offsetWidth;
     const tooltipHeight = tooltipElement.offsetHeight;
@@ -219,12 +220,13 @@ function positionTooltip(tooltipElement, event) {
  * @param {Array} coinAttributesMap - data.jsから提供されるcoinAttributesMap。
  */
 export function showMonsterTooltip(monster, event, coinAttributesMap) {
-    createMonsterTooltipElement(); // ポップアップ要素が存在しない場合は作成
+    createMonsterTooltipElement();
 
     let tooltipContent = `<h4>${monster.name}</h4>`;
-    if (monster.coinAttributes.length === 0) {
+    if (monster.allCoins.length === 0) {
         tooltipContent += '<p>硬貨を持っていません。</p>';
     } else {
+        tooltipContent += '<h5>先天の硬貨</h5>';
         monster.coinAttributes.forEach(coinId => {
             const coinInfo = coinAttributesMap.find(c => c.id === coinId);
             if (coinInfo) {
@@ -233,6 +235,17 @@ export function showMonsterTooltip(monster, event, coinAttributesMap) {
                 tooltipContent += `<p><span class="coin-attribute-name">${coinId}</span>: 説明なし</p>`;
             }
         });
+        if (monster.additionalCoins.length > 0) {
+            tooltipContent += '<h5>後天の硬貨</h5>';
+            monster.additionalCoins.forEach(coinId => {
+                const coinInfo = coinAttributesMap.find(c => c.id === coinId);
+                if (coinInfo) {
+                    tooltipContent += `<p>${getCoinAttributeName(coinId, coinAttributesMap)}: <span class="coin-description">${coinInfo.help}</span></p>`;
+                } else {
+                    tooltipContent += `<p><span class="coin-attribute-name">${coinId}</span>: 説明なし</p>`;
+                }
+            });
+        }
     }
     monsterTooltipElement.innerHTML = tooltipContent;
     positionTooltip(monsterTooltipElement, event);
@@ -243,9 +256,10 @@ export function showMonsterTooltip(monster, event, coinAttributesMap) {
  * @param {object} area - 表示対象のエリアオブジェクト。
  * @param {MouseEvent} event - マウスイベントオブジェクト。
  * @param {Array} coinAttributesMap - data.jsから提供されるcoinAttributesMap。
+ * @param {object} gameData - 現在のゲーム状態オブジェクト。
  */
-export function showAreaTooltip(area, event, coinAttributesMap) {
-    createAreaTooltipElement(); // ポップアップ要素が存在しない場合は作成
+export function showAreaTooltip(area, event, coinAttributesMap, gameData) {
+    createAreaTooltipElement();
     if (!areaTooltipElement) return; // 要素が作成されなかった場合は何もしない
 
     let tooltipContent = `<h4>${area.name}の属性硬貨</h4>`;
@@ -255,7 +269,12 @@ export function showAreaTooltip(area, event, coinAttributesMap) {
         area.coinAttributes.forEach(coinId => {
             const coinInfo = coinAttributesMap.find(c => c.id === coinId);
             if (coinInfo) {
+                // 味方のパーティが持つ該当硬貨の総枚数を計算
+                const partyCoinCount = gameData.party.reduce((count, monster) => {
+                    return count + monster.allCoins.filter(c => c === coinId).length;
+                }, 0);
                 tooltipContent += `<p>${getCoinAttributeName(coinId, coinAttributesMap)}: <span class="coin-description">${coinInfo.help}</span></p>`;
+                tooltipContent += `<p style="text-align: right; color: #a2ff7e;">所持枚数: ${partyCoinCount}</p>`;
             } else {
                 tooltipContent += `<p><span class="coin-attribute-name">${coinId}</span>: 説明なし</p>`;
             }
@@ -272,20 +291,40 @@ export function showAreaTooltip(area, event, coinAttributesMap) {
 
 /**
  * 硬貨情報ポップアップを表示する。
- * @param {Event} event - マウスイベント。
- * @param {string} coinId - 表示対象の硬貨ID。
- * @param {Array} coinAttributesMap - data.jsから提供されるcoinAttributesMap。
+ * @param {MouseEvent} event - マウスイベントオブジェクト。
+ * @param {string} coinId - 硬貨のID。
+ * @param {Array} map - 硬貨属性の定義マップ。
+ * @param {object} gameData - 現在のゲーム状態オブジェクト。
+ * @param {boolean} [countByMonster=false] - trueの場合、硬貨の総数ではなく、その硬貨を持つモン娘の人数を数える。
  */
-export function showCoinTooltip(event, coinId, coinAttributesMap) {
+export function showCoinTooltip(event, coinId, map, gameData, countByMonster = false) {
     createCoinTooltipElement();
     if (!coinTooltipElement) return;
 
-    const coinInfo = coinAttributesMap.find(c => c.id === coinId);
-    if (!coinInfo) {
-        coinTooltipElement.innerHTML = `<p>硬貨情報が見つかりません: ${coinId}</p>`;
-    } else {
-        coinTooltipElement.innerHTML = `<h4>${coinInfo.name}</h4><p><span class="coin-description">${coinInfo.help}</span></p>`;
+    const coinInfo = map.find(c => c.id === coinId);
+    if (!coinInfo) return;
+
+    let tooltipContent = `<h4>${coinInfo.name}の硬貨</h4><p><span class="coin-description">${coinInfo.help}</span></p>`;
+
+    // 味方のパーティが持つ該当硬貨の総枚数を計算 (gameDataが存在する場合のみ)
+    if (gameData && gameData.party) {
+        let count;
+        let label;
+        if (countByMonster) {
+            // その硬貨を持つモン娘の人数を数える
+            count = gameData.party.filter(monster => monster.allCoins.includes(coinId)).length;
+            label = '所持人数';
+        } else {
+            // 硬貨の総数を数える
+            count = gameData.party.reduce((totalCount, monster) => {
+                return totalCount + monster.allCoins.filter(c => c === coinId).length;
+            }, 0);
+            label = '所持枚数';
+        }
+        tooltipContent += `<p style="text-align: right; color: #a2ff7e;">${label}: ${count}</p>`;
     }
+    
+    coinTooltipElement.innerHTML = tooltipContent;
     positionTooltip(coinTooltipElement, event);
 }
 
@@ -379,6 +418,36 @@ export function getCoinAttributeName(attributeId, coinAttributesMap, opacity = 1
 }
 
 /**
+ * ★★★ START: 新しい硬貨ツールチップ生成関数 ★★★
+ * 硬貨属性のIDから、ツールチップ表示用のHTML文字列を生成する。
+ * @param {string} coinId - 硬貨属性のID (e.g., 'plain', 'magic')。
+ * @param {object[]} map - 硬貨属性の定義マップ。
+ * @param {boolean} [isAdditional=false] - 追加硬貨かどうか。
+ * @param {number} [opacity=1] - 硬貨の不透明度。
+ * @param {boolean} [countByMonsterForTooltip=false] - ツールチップで人数カウントを行うか。
+ * @returns {string} ツールチップ表示用のHTML文字列。
+ */
+export function createCoinTooltipHtml(coinId, map, isAdditional = false, opacity = 1, countByMonsterForTooltip = false) {
+    // getCoinAttributeName 関数を使って、スタイルが適用されたHTMLを生成
+    let styledCoinHtml = getCoinAttributeName(coinId, map, opacity);
+
+    // 追加硬貨の場合、後光エフェクトのクラスでラップする
+    if (isAdditional) {
+        styledCoinHtml = `<span class="additional-coin-glow">${styledCoinHtml}</span>`;
+    }
+
+    // 生成されたHTMLをツールチップのターゲットとしてラップ
+    // window.game がグローバルに利用可能であることを前提とする
+    return `<span class="coin-tooltip-target" data-coin-id="${coinId}" 
+            onmouseover="window.showCoinTooltip(event, '${coinId}', window.coinAttributesMap, ${countByMonsterForTooltip})" 
+            onmouseout="window.hideCoinTooltip()">
+            ${styledCoinHtml}
+           </span>`;
+}
+// ★★★ END: 新しい硬貨ツールチップ生成関数 ★★★
+
+
+/**
  * ゲームメッセージをログエリアに表示する。
  * @param {string} message - 表示するメッセージ。HTMLタグを含むことができる。
  */
@@ -433,28 +502,28 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
     const currentAreaCoinsDisplay = document.getElementById('current-area-coins-display');
     const favourDisplay = document.getElementById('favour');
     const partyList = document.getElementById('party-list');
-    const enemyInfo = document.getElementById('enemy-info'); // 敵情報の表示エリア
-    const enemyList = document.getElementById('enemy-list');   // 敵のリスト
+    const enemyInfo = document.getElementById('enemy-info');
+    const enemyList = document.getElementById('enemy-list');
     const initialSetupArea = document.getElementById('initial-setup-area');
     const actionArea = document.getElementById('action-area');
-    const playerLifeImage = document.getElementById('player-life-image'); // プレイヤーの生い立ち画像
+    const playerLifeImage = document.getElementById('player-life-image');
 
     if (dayDisplay) dayDisplay.innerText = `${gameData.days}`; // gameData.days を使用
     if (milkDisplay) milkDisplay.innerText = `${gameData.milk}`;
-    
+
     // 食料表示の更新
     if (foodDisplay) {
         // 探索派遣選択フェーズで、かつ予想食料獲得量がある場合（0でない場合）に「+b」形式で表示
         if (gameData.currentPhase === 'expeditionSelection' && gameData.estimatedFoodGain !== 0) {
-            foodDisplay.innerHTML = `${gameData.food} + <span style="color: #FFD700;">${gameData.estimatedFoodGain}</span>`; // 色をゴールドに変更
+            foodDisplay.innerHTML = `${gameData.food} + <span style="color: #FFD700;">${gameData.estimatedFoodGain}</span>`;
         } else {
             // 通常時、または予想食料獲得量が0の場合は通常の食料を表示
             foodDisplay.innerText = `${gameData.food}`;
         }
     }
-    
+
     // 仲間のモン娘の食費合計を計算し表示
-    gameData.upkeep = gameData.party.reduce((sum, monster) => sum + monster.upkeep, 0); // ここでgameData.upkeepを更新
+    gameData.upkeep = gameData.party.reduce((sum, monster) => sum + monster.upkeep, 0);
     if (partySizeDisplay) {
         partySizeDisplay.textContent = gameData.upkeep; // 食費合計を表示
     }
@@ -477,7 +546,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
         const area = gameData.currentArea; // 現在のエリア情報をクロージャでキャプチャ
         currentAreaCoinsDisplay._tooltipMouseOverListener = (event) => {
             if (area) { // エリア情報がある場合のみツールチップを表示
-                showAreaTooltip(area, event, coinAttributesMap); // イベントを渡す
+                showAreaTooltip(area, event, coinAttributesMap, gameData); // gameDataを渡す
             }
         };
         currentAreaCoinsDisplay._tooltipMouseOutListener = () => {
@@ -525,21 +594,39 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
             // マウスイベントリスナーを追加
             li.addEventListener('mouseover', (event) => showMonsterTooltip(monster, event, coinAttributesMap)); // event を渡す
             li.addEventListener('mouseout', hideMonsterTooltip);
-            
+
             // モン娘の画像を追加
             const monsterImage = document.createElement('img');
-            const imageUrl = imagePaths[monster.name];
-            monsterImage.src = imageUrl || './image/default.png'; // デフォルト画像をフォールバック
+            const imageUrl = imagePaths[monster.name] || './image/default.png'; // デフォルト画像をフォールバック
+            monsterImage.src = imageUrl;
             monsterImage.alt = monster.name;
             monsterImage.width = 128; // 64 * 2
             monsterImage.height = 128; // 64 * 2
             monsterImage.classList.add('monster-image');
             li.appendChild(monsterImage);
 
-            // 硬貨属性のHTMLを生成
-            const coinAttributesHtml = `<div class="coin-attributes-wrapper" style="display: ${showCoinsInPartyList ? 'flex' : 'none'};">${monster.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ')}</div>`;
-            li.innerHTML += coinAttributesHtml;
+            // 追加硬貨枚数オーバーレイの追加
+            if (monster.additionalCoins.length > 0) {
+                const overlayDiv = document.createElement('div');
+                overlayDiv.className = 'additional-coin-count-overlay';
+                overlayDiv.textContent = `+${monster.additionalCoins.length}`;
+                li.appendChild(overlayDiv);
+            }
 
+            // 先天的な硬貨のHTMLを生成
+            const normalCoinsHtml = monster.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ');
+
+            // 後天的な硬貨（追加硬貨）のHTMLを生成し、後光エフェクトクラスを追加
+            const additionalCoinsHtml = monster.additionalCoins.map(attrId => {
+                const coinHtml = getCoinAttributeName(attrId, coinAttributesMap);
+                return `<span class="additional-coin-glow">${coinHtml}</span>`;
+            }).join(' ');
+
+            // 硬貨をラッパーDIVにまとめて追加
+            const coinAttributesHtml = `<div class="coin-attributes-wrapper" style="display: ${showCoinsInPartyList ? 'flex' : 'none'};">
+                                            ${normalCoinsHtml} ${additionalCoinsHtml}
+                                        </div>`;
+            li.innerHTML += coinAttributesHtml;
 
             // 選択フェーズの場合、クリック可能にする
             if (isSelectionPhase) {
@@ -548,14 +635,14 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
                     if (selectableMonsterPool.includes(monster) && !monster.hasBeenSentToBattle) {
                         li.classList.add('selectable-monster'); // クリック可能なスタイル
                         // ここで enemies は selectedParty を表す
-                        if (enemies.includes(monster)) { 
-                            li.classList.add('dispatch-monster'); // 派遣中スタイル
+                        if (enemies.includes(monster)) {
+                            li.classList.add('dispatch-monster');
                             const statusText = document.createElement('span');
                             statusText.classList.add('status-text');
                             statusText.textContent = '出撃！';
                             li.appendChild(statusText);
                         } else {
-                            li.classList.add('resting-monster'); // 待機中スタイル
+                            li.classList.add('resting-monster');
                             const statusText = document.createElement('span');
                             statusText.classList.add('status-text');
                             statusText.textContent = '待機中';
@@ -572,7 +659,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
                     }
                 } else if (gameData.currentPhase === 'expeditionSelection') { // 通常の探索派遣フェーズ
                     // ここで enemies は expeditionParty を表す
-                     if (enemies.includes(monster)) {
+                    if (enemies.includes(monster)) {
                         li.classList.add('selectable-monster', 'dispatch-monster');
                         const statusText = document.createElement('span');
                         statusText.classList.add('status-text');
@@ -590,7 +677,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
                 // 通常表示
                 // 名前と硬貨は既に上記で追加されているため、ここでは何も追加しない
             }
-            
+
             partyList.appendChild(li);
         });
 
@@ -625,7 +712,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
             // 新しいイベントリスナーを追加
             const lifeData = gameData.playerLife; // クロージャでキャプチャ
             playerLifeImage._tooltipMouseOverListener = (event) => {
-                showLifeTooltip(lifeData, event); // イベントを渡す
+                showLifeTooltip(lifeData, event);
             };
             playerLifeImage._tooltipMouseOutListener = () => {
                 hideLifeTooltip();
@@ -633,7 +720,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
             playerLifeImage.addEventListener('mouseover', playerLifeImage._tooltipMouseOverListener);
             playerLifeImage.addEventListener('mouseout', playerLifeImage._tooltipMouseOutListener);
         } else {
-            playerLifeImage.style.display = 'none'; // 画像を非表示
+            playerLifeImage.style.display = 'none';
         }
     }
 
@@ -658,11 +745,11 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
                 enemyImage.classList.add('monster-image');
                 li.appendChild(enemyImage);
 
-                const monsterNameDiv = document.createElement('h3'); // h3タグを使用
+                const monsterNameDiv = document.createElement('h3');
                 monsterNameDiv.innerHTML = `<span class="monster-name-color">${enemy.name}</span>`;
                 li.appendChild(monsterNameDiv);
 
-                const coinsHtml = enemy.coinAttributes.map(attrId => { // enemy.coinAttributes を使用
+                const coinsHtml = enemy.allCoins.map(attrId => {
                     const attr = coinAttributesMap.find(c => c.id === attrId);
                     return `<span class="coin-attribute" style="background-color: ${attr.color};">${attr.name}</span>`;
                 }).join('');
@@ -698,7 +785,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
 
             favourDisplay.innerHTML = '<strong>神の寵愛:</strong> ';
             // ここで game.js の createCoinTooltipHtml を呼び出す
-            favourDisplay.innerHTML += gameData.favour.map(coinId => window.createCoinTooltipHtml(coinId, coinAttributesMap)).join(' ');
+            favourDisplay.innerHTML += gameData.favour.map(coinId => createCoinTooltipHtml(coinId, coinAttributesMap)).join(' ');
             favourDisplay.style.display = 'flex'; // 硬貨がある場合に表示
         } else {
             // 硬貨がない場合はイベントリスナーを削除し、非表示にする
@@ -737,11 +824,11 @@ export function waitForButtonClick() {
         const listener = (event) => {
             const button = event.target.closest('button');
             if (button) {
-                hideMonsterTooltip(); // ツールチップを非表示にする
-                hideAreaTooltip(); // エリアツールチップも非表示にする
-                hideCoinTooltip(); // コインツールチップも非表示にする
-                hideLifeTooltip(); // 生い立ちツールチップも非表示にする
-                hideFavourTooltip(); // 神の寵愛ツールチップも非表示にする
+                hideMonsterTooltip();
+                hideAreaTooltip();
+                hideCoinTooltip();
+                hideLifeTooltip();
+                hideFavourTooltip();
                 actionArea.removeEventListener('click', listener);
                 resolve(button.dataset.value);
             }
@@ -817,7 +904,7 @@ export function showCombatLogModal(title, content, enemyNames, buttonText = '閉
         modal.appendChild(titleElement);
 
         const enemyImagesContainer = document.createElement('div');
-        enemyImagesContainer.classList.add('enemy-images-container'); // 新しいクラスを追加
+        enemyImagesContainer.classList.add('enemy-images-container');
 
         // 敵モン娘の画像をコンテナに追加
         if (enemyNames && enemyNames.length > 0) {
@@ -939,7 +1026,7 @@ function handleDrop(event, gameData, coinAttributesMap, enemies, currentArea, is
         // パーティ配列を更新
         const [movedMonster] = gameData.party.splice(fromIndex, 1);
         gameData.party.splice(toIndex, 0, movedMonster);
-        
+
         // updateUIを呼び出してUI全体を再描画し、状態を反映させる
         updateUI(gameData, coinAttributesMap, enemies, currentArea, isSelectionPhase, selectableMonsterPool, maxPartySize);
     }

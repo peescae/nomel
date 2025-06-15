@@ -8,23 +8,27 @@
  */
 
 let guideMessages = {}; // guideMessage.jsonの内容を保持する変数
+let imagePaths = {}; // imagePathsを保持する変数
+
+// ドラッグ関連の状態変数
+let isDraggingHomunculus = false;
+let homunculusOffsetX, homunculusOffsetY;
 
 // DOMContentLoadedイベントリスナーをasync関数として定義し、fetchをawaitできるようにします。
 document.addEventListener('DOMContentLoaded', async () => {
+    const homunculusContainer = document.getElementById('homunculus-container');
     const homunculusImage = document.getElementById('homunculus-image');
-    const homunculusSpeechBubble = document.getElementById('homunculus-speech-bubble'); // 追加
+    const homunculusSpeechBubble = document.getElementById('homunculus-speech-bubble');
     const helpOverlay = document.getElementById('help-overlay');
     const helpModalCloseButton = document.getElementById('help-modal-close-button');
     const leftAlchemyImage = document.getElementById('left-alchemy-image');
     const rightAlchemyImage = document.getElementById('right-alchemy-image');
 
     // 必要なDOM要素が全て存在するか確認します。
-    if (homunculusImage && homunculusSpeechBubble && helpOverlay && helpModalCloseButton && leftAlchemyImage && rightAlchemyImage) {
+    if (homunculusContainer && homunculusImage && homunculusSpeechBubble && helpOverlay && helpModalCloseButton && leftAlchemyImage && rightAlchemyImage) {
         // ヘルプオーバーレイが初期表示されないように、念のため明示的に非表示にします。
         // style.cssでdisplay: none;が設定されていることが望ましいですが、ここでも設定します。
         helpOverlay.style.display = 'none'; 
-
-        let imagePaths = {}; // imagePathsを初期化
 
         // imagePaths.jsonをfetchで非同期に読み込みます。
         try {
@@ -68,9 +72,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         leftAlchemyImage.style.display = 'none';
         rightAlchemyImage.style.display = 'none';
 
-        // ホムンクルス画像クリックでヘルプウィンドウを表示します。
-        homunculusImage.addEventListener('click', () => {
-            console.log("ホムンクルス画像がクリックされました。"); // デバッグ用ログ
+        // ホムンクルス画像をダブルクリックでヘルプウィンドウを表示します。
+        homunculusImage.addEventListener('dblclick', () => { // 'click' を 'dblclick' に変更
+            console.log("ホムンクルス画像がダブルクリックされました。"); // デバッグ用ログ
             helpOverlay.style.display = 'flex'; // オーバーレイを表示
         });
 
@@ -90,11 +94,116 @@ document.addEventListener('DOMContentLoaded', async () => {
                 helpOverlay.style.display = 'none';
             }
         });
+
+        // ホムンクルスの初期位置を設定
+        const setHomunculusInitialPosition = () => {
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const containerWidth = homunculusContainer.offsetWidth;
+            const containerHeight = homunculusContainer.offsetHeight;
+
+            // 初期位置を画面右上に設定（マージンを考慮）
+            let initialTop = 25;
+            let initialLeft = viewportWidth - containerWidth - 25;
+
+            // 画面サイズが小さい場合の調整 (例: 768px以下の場合)
+            if (viewportWidth <= 768) {
+                initialTop = 10;
+                initialLeft = viewportWidth - containerWidth - 10;
+            }
+
+            // 最小値チェック（画面の端からはみ出さないように）
+            initialLeft = Math.max(initialLeft, 0);
+            initialTop = Math.max(initialTop, 0);
+
+            homunculusContainer.style.left = `${initialLeft}px`;
+            homunculusContainer.style.top = `${initialTop}px`;
+        };
+
+        // 初期位置をDOMContentLoadedとリサイズ時に設定
+        setHomunculusInitialPosition();
+        window.addEventListener('resize', setHomunculusInitialPosition);
+
+
+        // ドラッグイベントリスナーの設定
+        homunculusContainer.addEventListener('mousedown', (e) => {
+            // ホムンクルス画像または錬金術師画像上でのみドラッグ開始
+            if (e.target === homunculusImage || e.target === leftAlchemyImage || e.target === rightAlchemyImage) {
+                isDraggingHomunculus = true;
+                homunculusOffsetX = e.clientX - homunculusContainer.getBoundingClientRect().left;
+                homunculusOffsetY = e.clientY - homunculusContainer.getBoundingClientRect().top;
+                homunculusContainer.style.cursor = 'grabbing';
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDraggingHomunculus) return;
+
+            e.preventDefault(); // デフォルトのドラッグ動作（テキスト選択など）を防ぐ
+
+            let newLeft = e.clientX - homunculusOffsetX;
+            let newTop = e.clientY - homunculusOffsetY;
+
+            // 画面境界内での移動を制限
+            const maxX = window.innerWidth - homunculusContainer.offsetWidth;
+            const maxY = window.innerHeight - homunculusContainer.offsetHeight;
+
+            newLeft = Math.max(0, Math.min(newLeft, maxX));
+            newTop = Math.max(0, Math.min(newTop, maxY));
+
+            homunculusContainer.style.left = `${newLeft}px`;
+            homunculusContainer.style.top = `${newTop}px`;
+
+            // 吹き出しの位置はコンテナのflexboxで自動調整される
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDraggingHomunculus = false;
+            homunculusContainer.style.cursor = 'grab';
+        });
+
+        // タッチイベントリスナーの設定 (モバイル対応)
+        homunculusContainer.addEventListener('touchstart', (e) => {
+            if (e.target === homunculusImage || e.target === leftAlchemyImage || e.target === rightAlchemyImage) {
+                e.preventDefault(); // デフォルトのスクロール動作などを防ぐ
+                isDraggingHomunculus = true;
+                const touch = e.touches[0];
+                homunculusOffsetX = touch.clientX - homunculusContainer.getBoundingClientRect().left;
+                homunculusOffsetY = touch.clientY - homunculusContainer.getBoundingClientRect().top;
+                homunculusContainer.style.cursor = 'grabbing';
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDraggingHomunculus) return;
+
+            e.preventDefault(); // デフォルトのスクロール動作などを防ぐ
+            const touch = e.touches[0];
+
+            let newLeft = touch.clientX - homunculusOffsetX;
+            let newTop = touch.clientY - homunculusOffsetY;
+
+            const maxX = window.innerWidth - homunculusContainer.offsetWidth;
+            const maxY = window.innerHeight - homunculusContainer.offsetHeight;
+
+            newLeft = Math.max(0, Math.min(newLeft, maxX));
+            newTop = Math.max(0, Math.min(newTop, maxY));
+
+            homunculusContainer.style.left = `${newLeft}px`;
+            homunculusContainer.style.top = `${newTop}px`;
+        });
+
+        document.addEventListener('touchend', () => {
+            isDraggingHomunculus = false;
+            homunculusContainer.style.cursor = 'grab';
+        });
+
     } else {
         console.error("必要なDOM要素が見つかりません。helpUI.jsの初期化に失敗しました。");
         console.error("存在しない要素: ", {
+            homunculusContainer: !!homunculusContainer,
             homunculusImage: !!homunculusImage,
-            homunculusSpeechBubble: !!homunculusSpeechBubble, // 追加
+            homunculusSpeechBubble: !!homunculusSpeechBubble,
             helpOverlay: !!helpOverlay,
             helpModalCloseButton: !!helpModalCloseButton,
             leftAlchemyImage: !!leftAlchemyImage,
@@ -110,11 +219,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 export function displayGuideMessage(messageKey) {
     const homunculusSpeechBubble = document.getElementById('homunculus-speech-bubble');
     if (homunculusSpeechBubble && guideMessages[messageKey]) {
+        // メッセージ内容を更新
         homunculusSpeechBubble.innerHTML = guideMessages[messageKey].text;
         homunculusSpeechBubble.style.opacity = '1';
         homunculusSpeechBubble.style.visibility = 'visible';
+
+        // アニメーションクラスを一旦削除
+        homunculusSpeechBubble.classList.remove('bounce-animation');
+
+        // アニメーションを再トリガーするために、強制的にリフローを発生させる
+        void homunculusSpeechBubble.offsetWidth;
+
+        // アニメーションクラスを再度追加して、アニメーションを再生
+        homunculusSpeechBubble.classList.add('bounce-animation');
     } else {
         console.warn(`ガイドメッセージのキー「${messageKey}」が見つからないか、homunculus-speech-bubble要素が見つかりません。`);
     }
 }
-

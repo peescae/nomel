@@ -7,6 +7,7 @@
     , "a5": { "talker": "真面目", "category": "食後", "text": "ごちそうさまでした"}
     , "a6": { "talker": "真面目", "category": "加入", "text": "よろしくお願いします"}
     , "a7": { "talker": "真面目", "category": "空腹", "text": "お腹が空きました"}
+    , "a8": { "talker": "真面目", "category": "延期", "text": "そうですか……"}
     , "b1": { "talker": "元気", "category": "起床", "text": "おはよー！"}
     , "b2": { "talker": "元気", "category": "探索", "text": "行くぞー！"}
     , "b3": { "talker": "元気", "category": "勝利", "text": "勝ったー！"}
@@ -14,6 +15,7 @@
     , "b5": { "talker": "元気", "category": "食後", "text": "おいしー！"}
     , "b6": { "talker": "元気", "category": "加入", "text": "よろしくね！"}
     , "b7": { "talker": "元気", "category": "空腹", "text": "おなかすいた！"}
+    , "b8": { "talker": "元気", "category": "延期", "text": "そんなー！"}
     , "c1": { "talker": "真面目元気", "category": "起床", "text": "おはようございまーす！"}
     , "c2": { "talker": "真面目元気", "category": "探索", "text": "行ってきまーす！"}
     , "c3": { "talker": "真面目元気", "category": "勝利", "text": "やりましたー！"}
@@ -21,6 +23,7 @@
     , "c5": { "talker": "真面目元気", "category": "食後", "text": "おいしいです！"}
     , "c6": { "talker": "真面目元気", "category": "加入", "text": "よろしくお願いしまーす！"}
     , "c7": { "talker": "真面目元気", "category": "空腹", "text": "お腹が空きましたよ！"}
+    , "c8": { "talker": "真面目元気", "category": "延期", "text": "おあずけ！？"}
     , "d1": { "talker": "ゆるい", "category": "起床", "text": "おはよー"}
     , "d2": { "talker": "ゆるい", "category": "探索", "text": "いくよー"}
     , "d3": { "talker": "ゆるい", "category": "勝利", "text": "やったー"}
@@ -28,6 +31,7 @@
     , "d5": { "talker": "ゆるい", "category": "食後", "text": "うめうめ"}
     , "d6": { "talker": "ゆるい", "category": "加入", "text": "よろ"}
     , "d7": { "talker": "ゆるい", "category": "空腹", "text": "めしをくれ"}
+    , "d8": { "talker": "ゆるい", "category": "延期", "text": "けち"}
     , "e1": { "talker": "俺っ娘", "category": "起床", "text": "ねみー"}
     , "e2": { "talker": "俺っ娘", "category": "探索", "text": "だりー"}
     , "e3": { "talker": "俺っ娘", "category": "勝利", "text": "よっしゃ！"}
@@ -35,6 +39,7 @@
     , "e5": { "talker": "俺っ娘", "category": "食後", "text": "うんめー！"}
     , "e6": { "talker": "俺っ娘", "category": "加入", "text": "うっす"}
     , "e7": { "talker": "俺っ娘", "category": "空腹", "text": "おい！　めしがたんねーぞっ！"}
+    , "e8": { "talker": "俺っ娘", "category": "延期", "text": "そりゃねーよ！"}
     , "f1": { "talker": "ぶっきらぼう", "category": "起床", "text": "おはよう"}
     , "f2": { "talker": "ぶっきらぼう", "category": "探索", "text": "行ってくる"}
     , "f3": { "talker": "ぶっきらぼう", "category": "勝利", "text": "勝ったよ"}
@@ -42,6 +47,7 @@
     , "f5": { "talker": "ぶっきらぼう", "category": "食後", "text": "うまい"}
     , "f6": { "talker": "ぶっきらぼう", "category": "加入", "text": "よろしく"}
     , "f7": { "talker": "ぶっきらぼう", "category": "空腹", "text": "お腹空いた"}
+    , "f8": { "talker": "ぶっきらぼう", "category": "延期", "text": "えー"}
     , "g1": { "talker": "上品", "category": "起床", "text": "お早うございます"}
     , "g2": { "talker": "上品", "category": "探索", "text": "行って参りますね"}
     , "g3": { "talker": "上品", "category": "勝利", "text": "他愛もない"}
@@ -49,4 +55,5 @@
     , "g5": { "talker": "上品", "category": "食後", "text": "大変美味しゅうございました"}
     , "g6": { "talker": "上品", "category": "加入", "text": "よろしくお願い申し上げます"}
     , "g7": { "talker": "上品", "category": "空腹", "text": "もう辛抱溜まりません"}
+    , "g8": { "talker": "上品", "category": "延期", "text": "そんな殺生な……"}
 }

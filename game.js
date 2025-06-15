@@ -17,7 +17,9 @@ import {
     createButtons,
     showLifeTooltip,
     hideLifeTooltip,
-    toggleCoinDisplay
+    toggleCoinDisplay,
+    createCoinTooltipHtml,
+    showCoinTooltip // showCoinTooltipをインポート
 } from './uiManager.js';
 import { conductFight } from './battle.js';
 import { updateEstimatedFoodGain } from './food.js';
@@ -31,47 +33,9 @@ window.coinAttributesMap = coinAttributesMap;
 
 // game.js内でグローバルにアクセスできるように、uiManagerの関数をwindowオブジェクトに割り当て
 // HTMLのonmouseover属性などから直接呼び出すため
-window.showCoinTooltip = (event, coinId, map) => {
+window.showCoinTooltip = (event, coinId, map, countByMonsterFlag) => { // countByMonsterFlagを受け取るように変更
     // uiManager.js からインポートされた showCoinTooltip 関数を呼び出す
-    const coinInfo = map.find(c => c.id === coinId);
-    if (!coinInfo) return; // 硬貨情報がなければ何もしない
-
-    // ツールチップ要素の作成と設定
-    let tooltipElement = document.getElementById('coin-tooltip');
-    if (!tooltipElement) {
-        tooltipElement = document.createElement('div');
-        tooltipElement.id = 'coin-tooltip';
-        // style.cssで定義されたスタイルが適用されるように、ここでは基本的なことのみ設定
-        tooltipElement.style.position = 'absolute';
-        tooltipElement.style.pointerEvents = 'none'; // マウスイベントをブロックしない
-        tooltipElement.style.opacity = '0';
-        tooltipElement.style.visibility = 'hidden';
-        document.body.appendChild(tooltipElement);
-    }
-
-    tooltipElement.innerHTML = `<h4>${coinInfo.name}の硬貨</h4><p><span class="coin-description">${coinInfo.help}</span></p>`;
-
-    // ツールチップの位置を計算
-    const targetRect = event.currentTarget.getBoundingClientRect();
-    let left = targetRect.right + 10;
-    let top = targetRect.top;
-
-    // 画面の右端からはみ出さないように調整
-    if (left + tooltipElement.offsetWidth > window.innerWidth - 20) {
-        left = targetRect.left - tooltipElement.offsetWidth - 10;
-        if (left < 20) left = (window.innerWidth - tooltipElement.offsetWidth) / 2;
-    }
-    // 画面の下端からはみ出さないように調整
-    if (top + tooltipElement.offsetHeight > window.innerHeight - 20) {
-        top = window.innerHeight - tooltipElement.offsetHeight - 20;
-    }
-    if (top < 20) top = 20;
-
-
-    tooltipElement.style.left = `${left + window.scrollX}px`;
-    tooltipElement.style.top = `${top + window.scrollY}px`;
-    tooltipElement.style.opacity = '1';
-    tooltipElement.style.visibility = 'visible';
+    showCoinTooltip(event, coinId, map, game, countByMonsterFlag); // gameオブジェクトとフラグを渡す
 };
 
 window.hideCoinTooltip = () => {
@@ -114,12 +78,9 @@ let imagePaths; // 画像パスを保持する変数
  * プレイヤーは最大数までモン娘を仲間に加えることができる。
  */
 async function offerMonstersToJoin() {
-    logMessage(`<br/>`);
-    logMessage(`<div id="game-messages-phase">--- モン娘加入フェーズ ---</div>`);
     game.currentPhase = 'joinPhase';
-
-    // 最初の選択: プレイヤーは必ず1体選ぶ必要がある
-    logMessage(`最初に雇う仲間を選んでね。`);
+    logMessage(`<br/><div id="game-messages-phase">--- モン娘加入フェーズ ---</div>`);
+    displayGuideMessage('モン娘加入フェーズ1人目');
     clearActionArea();
 
     let initialChoices = [];
@@ -137,7 +98,7 @@ async function offerMonstersToJoin() {
     const actionArea = document.getElementById('action-area');
     for (const monster of initialChoices) {
         const button = document.createElement('button');
-        button.className = 'choice-button monster-choice-button'; 
+        button.className = 'choice-button monster-choice-button';
         const imageUrl = imagePaths[monster.name] || './image/default.png'; // 画像パスを取得、なければデフォルト画像
         button.innerHTML = `<img src="${imageUrl}" alt="${monster.name}" class="monster-image">`;
         button.dataset.monsterName = monster.name; // ツールチップ表示用に名前をdata属性に保存
@@ -149,11 +110,11 @@ async function offerMonstersToJoin() {
         button.addEventListener('mouseout', hideMonsterTooltip);
     }
 
-
     const initialChoiceName = await waitForButtonClick();
     const chosenInitialMonster = initialChoices.find(m => m.name === initialChoiceName);
     game.party.push(chosenInitialMonster);
     game.milk--;
+
     // 加入の効果音を再生
     showSpeechBubble([chosenInitialMonster], '加入', random);
     playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
@@ -162,7 +123,7 @@ async function offerMonstersToJoin() {
 
     // 2回目以降の選択: プレイヤーは最大3体までモン娘を加入可能
     while (game.party.length < GAME_CONSTANTS.MAX_PARTY_SIZE) {
-        logMessage(`もっと仲間を増やそうか？（現在の仲間数: ${game.party.length} / ${GAME_CONSTANTS.MAX_PARTY_SIZE}）`);
+        displayGuideMessage('モン娘加入フェーズ2人目以降');
 
         let subsequentChoices = [];
         // 現在パーティにいない、かつ'enemy'属性を持たないモン娘のみを対象とする
@@ -191,7 +152,6 @@ async function offerMonstersToJoin() {
             button.addEventListener('mouseout', hideMonsterTooltip);
         }
 
-
         // MAX_PARTY_SIZE未満の場合のみ「仲間加入を終了」ボタンを表示
         if (game.party.length < GAME_CONSTANTS.MAX_PARTY_SIZE) {
             const finishButton = document.createElement('button');
@@ -203,7 +163,7 @@ async function offerMonstersToJoin() {
         const choiceName = await waitForButtonClick();
 
         if (choiceName === 'finish') {
-            logMessage("モン娘の勧誘を打ち切ったよ。");
+            displayGuideMessage('モン娘加入打ち切り');
             break; // ループを抜ける
         }
 
@@ -219,7 +179,7 @@ async function offerMonstersToJoin() {
 
     // MAX_PARTY_SIZEになった時点で自動的に終了メッセージを表示
     if (game.party.length >= GAME_CONSTANTS.MAX_PARTY_SIZE) {
-        logMessage(`仲間も集まったし、冒険に出発しよう！`);
+        displayGuideMessage('出発');
     }
 
     if (actionArea) actionArea.innerHTML = '<button data-value="continue">出発</button>';
@@ -234,9 +194,8 @@ async function offerMonstersToJoin() {
  * @returns {Promise<object>} 選択された地形オブジェクト。
  */
 async function selectExplorationArea() {
-    logMessage(`<br/>`);
-    logMessage(`\n<div id="game-messages-phase">--- 探索エリア選択フェーズ ---</div>`);
     game.currentPhase = 'areaSelection';
+    logMessage(`<br/><div id="game-messages-phase">--- 探索エリア選択フェーズ ---</div>`);
     displayGuideMessage('探索エリア選択フェーズ'); // ガイドメッセージを表示
 
     // 現在の日数に基づいて最大属性数を決定
@@ -248,15 +207,8 @@ async function selectExplorationArea() {
     const areaChoices = [];
     // フィルターされた地形からランダムに3つ（またはそれ以下）を選択
     const shuffledFilteredAreas = [...availableAreas].sort(() => 0.5 - random());
-    // 冒険家の場合、地形を2つ追加
-    if (game.playerLife.name === '冒険家') {
-        areaChoices.push(...shuffledFilteredAreas.slice(0, 5));
-    }
-    else {
-        areaChoices.push(...shuffledFilteredAreas.slice(0, 3));
-    }
+    areaChoices.push(...shuffledFilteredAreas.slice(0, game.playerLife.name === '冒険家' ? GAME_CONSTANTS.SELECT_AREA_ADVENTURER : GAME_CONSTANTS.SELECT_AREA_SIZE));
 
-    logMessage("どっちに進もう？");
     clearActionArea(); // このフェーズの開始時にactionAreaをクリア
     game.estimatedFoodGain = 0; // エリア選択時は予想食料をリセット
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して表示を反映
@@ -266,13 +218,12 @@ async function selectExplorationArea() {
         const button = document.createElement('button');
         button.className = 'choice-button';
         // HTML要素を直接innerHTMLに設定する
-        // ここを修正: createCoinTooltipHtml の代わりに getCoinAttributeName を使用
         button.innerHTML = `${index + 1}: <span class="monster-name-color">${area.name}</span> ${area.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ')}`;
         button.dataset.value = area.id; // エリアのIDを返すように変更
         actionArea.appendChild(button);
 
         // マウスイベントリスナー
-        button.addEventListener('mouseover', (event) => showAreaTooltip(area, event, coinAttributesMap));
+        button.addEventListener('mouseover', (event) => showAreaTooltip(area, event, coinAttributesMap, game)); // gameオブジェクトを渡す
         button.addEventListener('mouseout', hideAreaTooltip); // hideAreaTooltip を使用
     });
 
@@ -294,19 +245,17 @@ async function selectExplorationArea() {
  * @returns {Promise<{expeditionParty: Monster[], restingParty: Monster[]}>} 派遣されるモン娘と待機するモン娘の配列。
  */
 async function sendMonstersOnExpedition(currentArea) {
-    logMessage(`<br/>`);
-    logMessage(`\n<div id="game-messages-phase">--- 探索派遣フェーズ ---</div>`);
-    displayGuideMessage('探索派遣フェーズ');
     game.currentPhase = 'expeditionSelection';
+    logMessage(`<br/><div id="game-messages-phase">--- 探索派遣フェーズ ---</div>`);
+    displayGuideMessage('探索派遣フェーズ');
 
     // ログメッセージの硬貨属性をツールチップ対応にする
     const areaCoinHtml = currentArea.coinAttributes.map(attrId => {
-        // createCoinTooltipHtml を呼び出して、スタイル付きのHTMLを生成
         return createCoinTooltipHtml(attrId, coinAttributesMap);
     }).join(' ');
 
-    logMessage(`探索に派遣するモン娘を選ぼう！　地域の硬貨属性 (${areaCoinHtml}) に適したモン娘を選んでね。`);
- 
+    logMessage(`地域の属性 (${areaCoinHtml})`);
+
     const expeditionParty = []; // 派遣されるモン娘
     // restingParty は動的に計算されるため、ここでは初期化しない
 
@@ -391,9 +340,8 @@ async function sendMonstersOnExpedition(currentArea) {
  * @returns {Promise<boolean|string>} 襲撃を撃退できたか、またはゲームオーバーで終了した場合はfalse。
  */
 async function handleRaid(restingParty, currentArea) {
-    logMessage(`<br/>`);
-    logMessage(`\n<div id="game-messages-phase">--- 襲撃フェーズ ---</div>`);
     game.currentPhase = 'raidPhase';
+    logMessage(`<br/><div id="game-messages-phase">--- 襲撃フェーズ ---</div>`);
 
     const partyList = document.getElementById('party-list');
     // 襲撃フェーズ開始時に待機中のモン娘に特別なスタイルを適用
@@ -430,6 +378,7 @@ async function handleRaid(restingParty, currentArea) {
     let numEnemies;
     switch (raidType) {
         case 'special':
+            displayGuideMessage('襲撃');
             logMessage("強敵が襲撃してきたよ！");
             numEnemies = 1 + Math.floor((game.days - 1) / GAME_CONSTANTS.ENEMY_COUNT_SCALING_DAYS);
             enemies = generateSpecialRaidEnemies(numEnemies, game.days, random);
@@ -445,12 +394,14 @@ async function handleRaid(restingParty, currentArea) {
             break;
 
         case 'normal':
+            displayGuideMessage('襲撃');
             logMessage("モン娘が襲撃してきたよ！");
             numEnemies = 1 + Math.floor((game.days - 1) / GAME_CONSTANTS.ENEMY_COUNT_SCALING_DAYS);
             enemies = generateAreaSpecificEnemies(numEnemies, currentArea, game.days, random);
             break;
 
         default:
+            displayGuideMessage('平和');
             logMessage("襲撃はないみたい。");
             // 襲撃がない場合でもスタイルを解除
             game.party.forEach(monster => {
@@ -464,13 +415,18 @@ async function handleRaid(restingParty, currentArea) {
 
     logMessage(`敵モン娘 ${enemies.length} 体が出現！`);
     enemies.forEach(enemy => {
-        const enemyCoinHtml = enemy.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap)).join(' ');
+        const normalCoinsHtml = enemy.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, false)).join(' ');
+        const additionalCoinsHtml = enemy.additionalCoins.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, true)).join(' ');
+        const enemyCoinHtml = `${normalCoinsHtml} ${additionalCoinsHtml}`;
         logMessage(` - <span class="monster-name-color">${enemy.name}</span> ( ${enemyCoinHtml} )`);
     });
 
     if (restingParty.length === 0) {
+        logMessage("キャンプに誰もいないよ！");
+
         if (raidType === 'duel') {
-            logMessage("キャンプに誰もいないよ！");
+            playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+
             logMessage("おじさんのミルクが搾り取られちゃった。");
             game.milk--;;
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
@@ -491,7 +447,6 @@ async function handleRaid(restingParty, currentArea) {
         else {
             playSfx("逃走").catch(e => console.error("逃走の効果音の再生に失敗しました:", e));
 
-            logMessage("キャンプに誰もいないよ！");
             logMessage("なんとか逃げ切れたけど、全ての食料を置いてきちゃった。");
             game.food = 0;
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
@@ -518,16 +473,17 @@ async function handleRaid(restingParty, currentArea) {
     const battleResult = await conductFight(game, restingParty, enemies, random, currentArea, raidType);
 
     if (!battleResult.won) {
+        displayGuideMessage('襲撃敗北');
+
         if (raidType === 'duel') {
             // 決闘敗北時の処理
             logMessage("決闘に負けて、おじさんのミルクが搾り取られちゃった。");
-            game.milk--; // ミルクを1減らす
+            game.milk--;
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
         }
         else {
             logMessage("なんとか逃げ切れたけど、全ての食料を置いてきちゃった。");
             game.food = 0;
-            logMessage(`現在の食料: ${game.food}`);
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
         }
         clearActionArea();
@@ -544,6 +500,8 @@ async function handleRaid(restingParty, currentArea) {
             }
         });
     } else {
+        displayGuideMessage('襲撃勝利');
+
         // 敵モン娘のcoinAttributesに'enemy'が含まれていない、かつ特殊襲撃ではない場合のみ仲間に加える候補とする
         const recruitableEnemies = enemies.filter(enemy =>
             enemy && enemy.coinAttributes && !enemy.coinAttributes.includes('enemy') && raidType !== 'special'
@@ -558,12 +516,7 @@ async function handleRaid(restingParty, currentArea) {
         }
 
         if (recruitableEnemies.length > 0) {
-            if (raidType === 'duel') {
-                logMessage("倒した敵を勧誘する？");
-            }
-            else {
-                logMessage("倒した敵を勧誘する？ (ミルク1杯消費)");
-            }
+            raidType === 'duel' ? displayGuideMessage('決闘後の勧誘') : displayGuideMessage('ミルクで勧誘');
 
             clearActionArea();
             recruitableEnemies.forEach((enemy, index) => {
@@ -582,41 +535,48 @@ async function handleRaid(restingParty, currentArea) {
 
             });
             const skipButton = document.createElement('button');
-            skipButton.innerText = "スキップ";
+            skipButton.innerText = "断る";
             skipButton.dataset.value = 'skip';
             actionArea.appendChild(skipButton);
 
-            const choice = await waitForButtonClick();
-            if (choice === 'skip') {
-                playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
-                logMessage("敵を勧誘せずに先に進むよ。");
-            } else {
-                const chosenEnemy = recruitableEnemies.find(m => m.name === choice);
-                if (game.playerLife.name === '炉裏魂' && chosenEnemy.coinAttributes.length > game.coinSizeLimit) {
-                    // NGの効果音を再生
-                    playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
-                    logMessage("おじさんは炉裏魂だから、その娘は仲間にできないね。");                    
-                }
-                else if (raidType === 'duel') {
-                    // 加入の効果音を再生
-                    playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
-                    logMessage(`<span class="monster-name-color">${chosenEnemy.name}</span> が仲間に加わったよ！`);
-                    // 戦闘勝利後はMAX_PARTY_SIZEの制限なく加入可能
-                    game.party.push(chosenEnemy);
-                    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // 食費更新のためUI更新
-                }
-                else if (game.milk > 0) {
-                    // 加入の効果音を再生
-                    playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
-                    game.milk--; // ミルクを1消費
-                    logMessage(`おじさんのミルクで <span class="monster-name-color">${chosenEnemy.name}</span> が仲間に加わったよ！`);
-                    // 戦闘勝利後はMAX_PARTY_SIZEの制限なく加入可能
-                    game.party.push(chosenEnemy);
-                    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // 食費更新のためUI更新
+            while (true) {
+                const choice = await waitForButtonClick();
+                if (choice === 'skip') {
+                    playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+                    logMessage("敵を勧誘せずに先に進むよ。");
+                    break;
                 } else {
-                    // NGの効果音を再生
-                    playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
-                    logMessage("おじさんのミルクが空っぽだから、そのモン娘は仲間にできないね。");
+                    const chosenEnemy = recruitableEnemies.find(m => m.name === choice);
+                    if (game.playerLife.name === '炉裏魂' && chosenEnemy.coinAttributes.length > game.coinSizeLimit) {
+                        // NGの効果音を再生
+                        playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+                        displayGuideMessage('炉裏魂ゆえに');
+                    }
+                    else if (raidType === 'duel') {
+                        // 加入の効果音を再生
+                        playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+                        logMessage(`<span class="monster-name-color">${chosenEnemy.name}</span> が仲間に加わったよ！`);
+                        showSpeechBubble([chosenEnemy], '加入', random);
+                        // 戦闘勝利後はMAX_PARTY_SIZEの制限なく加入可能
+                        game.party.push(chosenEnemy);
+                        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // 食費更新のためUI更新
+                        break;
+                    }
+                    else if (game.milk > 0) {
+                        // 加入の効果音を再生
+                        playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+                        game.milk--; // ミルクを1消費
+                        logMessage(`おじさんのミルクで <span class="monster-name-color">${chosenEnemy.name}</span> が仲間に加わったよ！`);
+                        showSpeechBubble([chosenEnemy], '加入', random);
+                        // 戦闘勝利後はMAX_PARTY_SIZEの制限なく加入可能
+                        game.party.push(chosenEnemy);
+                        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // 食費更新のためUI更新
+                        break;
+                    } else {
+                        // NGの効果音を再生
+                        playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+                        displayGuideMessage('ミルク不足');
+                    }
                 }
             }
         }
@@ -641,10 +601,9 @@ async function handleRaid(restingParty, currentArea) {
  * @returns {Promise<boolean>} 全てのボスに勝利した場合true、敗北した場合false。
 */
 async function handleBossBattle(currentArea) {
-    logMessage(`<br/>`);
-    logMessage("\n--- ボス戦開始！ ---");
-    displayGuideMessage('ボス戦1');
     game.currentPhase = 'bossBattle';
+    logMessage("<br>--- ボス戦開始！ ---");
+    displayGuideMessage('ボス戦1');
 
     playMusic('ボス');
 
@@ -677,14 +636,17 @@ async function handleBossBattle(currentArea) {
         if (!battleResult.won) {
             return false; // ゲームオーバー
         } else {
-            if (i === 0) {
-                displayGuideMessage('ボス戦2');
-            }
-            else if (i === 1) {
-                displayGuideMessage('ボス戦3');
-            }
-            else {
-                displayGuideMessage('ボス戦勝利');
+            switch (i) {
+                case 0:
+                    displayGuideMessage('ボス戦2');
+                    break;
+                case 1:
+                    displayGuideMessage('ボス戦3');
+                    break;
+                case 2:
+                    displayGuideMessage('ボス戦勝利');
+                    break;
+                default:
             }
             // 敵表示をクリア
             updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
@@ -735,18 +697,20 @@ async function startFinalBossBattle() {
     // 選択肢をシャッフル
     chosenAreas.sort(() => 0.5 - random());
 
-    // UIに地形選択ボタンを表示
-    const areaButtons = chosenAreas.map(area => {
-        // ここを修正: createCoinTooltipHtml の代わりに getCoinAttributeName を使用
-        const areaCoinHtml = area.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ');
-        return {
-            id: area.id,
-            text: `${area.name} (${areaCoinHtml})`, // innerHTML用
-            className: 'choice-button' // スタイルを適用
-        };
-    });
-    createButtons(areaButtons);
+    const actionArea = document.getElementById('action-area');
+    chosenAreas.forEach((area, index) => {
+        const button = document.createElement('button');
+        button.className = 'choice-button';
+        // HTML要素を直接innerHTMLに設定する
+        button.innerHTML = `${index + 1}: <span class="monster-name-color">${area.name}</span> ${area.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ')}`;
+        button.dataset.value = area.id; // エリアのIDを返すように変更
+        actionArea.appendChild(button);
 
+        // マウスイベントリスナー
+        button.addEventListener('mouseover', (event) => showAreaTooltip(area, event, coinAttributesMap, game));
+        button.addEventListener('mouseout', hideAreaTooltip); // hideAreaTooltip を使用
+    });
+    
     const chosenAreaId = await waitForButtonClick();
     const finalBossArea = areaTypes.find(area => area.id === chosenAreaId);
 
@@ -789,11 +753,17 @@ async function startFinalBossBattle() {
             endGame(false); // ゲームオーバー
             return;
         } else {
-            if (i === 1) {
-                displayGuideMessage('ボス戦2');
-            }
-            else if (i === 2) {
-                displayGuideMessage('ボス戦3');
+            switch (i) {
+                case 0:
+                    displayGuideMessage('ボス戦2');
+                    break;
+                case 1:
+                    displayGuideMessage('ボス戦3');
+                    break;
+                case 2:
+                    displayGuideMessage('ボス戦勝利');
+                    break;
+                default:
             }
             // 敵表示をクリア
             updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
@@ -838,44 +808,60 @@ async function handleRecruitmentEvent(currentArea) {
         monsterToOffer = getUniqueRandomMonsters(game, 1, potentialTemplates, false, 0, game.coinSizeLimit, random)[0];
     }
 
-    const monsterCoinHtml = monsterToOffer.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap)).join(' ');
+    const normalCoinsHtml = monsterToOffer.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, false)).join(' ');
+    const additionalCoinsHtml = monsterToOffer.additionalCoins.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, true)).join(' ');
+    const monsterCoinHtml = `${normalCoinsHtml} ${additionalCoinsHtml}`;
 
     logMessage(`<span class="monster-name-color">${monsterToOffer.name}</span> が仲間になりたそうにこちらを見ているよ！<br>
-                ( ${monsterCoinHtml} )<br>
-                おじさんのミルクで彼女を勧誘しちゃう？ (現在のミルク: ${game.milk}杯)`);
+                ( ${monsterCoinHtml} )`);
+    displayGuideMessage('ミルクで勧誘');
 
     const actionArea = document.getElementById('action-area');
-    const recruitButton = document.createElement('button');
-    recruitButton.innerText = `仲間にする (ミルク1杯)`;
-    recruitButton.dataset.value = 'recruit';
-    actionArea.appendChild(recruitButton);
 
-    const declineButton = document.createElement('button');
-    declineButton.innerText = `断る`;
-    declineButton.dataset.value = 'decline';
-    actionArea.appendChild(declineButton);
+    [monsterToOffer].forEach((enemy, index) => {
+        const button = document.createElement('button');
+        button.className = 'choice-button';
+        // ここを修正: モン娘の名前と硬貨の表示を画像に置き換える
+        const imageUrl = imagePaths[enemy.name] || './image/default.png';
+        button.innerHTML = `<img src="${imageUrl}" alt="${enemy.name}" class="monster-image">`;
+        button.dataset.monsterName = enemy.name;
+        button.dataset.value = enemy.name; // クリックされたモン娘の名前を返すようにする
+        actionArea.appendChild(button);
 
-    const choice = await waitForButtonClick();
+        // モン娘全体のツールチップイベントリスナーをボタンに直接付与
+        button.addEventListener('mouseover', (event) => showMonsterTooltip(enemy, event, coinAttributesMap));
+        button.addEventListener('mouseout', hideMonsterTooltip);
 
-    if (choice === 'recruit') {
-        if (game.milk >= 1) {
-            // 加入の効果音を再生
-            playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+    });
+    const skipButton = document.createElement('button');
+    skipButton.innerText = "断る";
+    skipButton.dataset.value = 'skip';
+    actionArea.appendChild(skipButton);
 
-            game.milk--;
-            game.party.push(monsterToOffer);
-            logMessage(`<span class="monster-name-color">${monsterToOffer.name}</span> が仲間になったよ！`);
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
-        } else {
-            // NGの効果音を再生
-            playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+    while (true) {
+        const choice = await waitForButtonClick();
+        if (choice === 'skip') {
+            playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+            logMessage("敵を勧誘せずに先に進むよ。");
+            break;
+        }
+        else {
+            if (game.milk >= 1) {
+                playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
 
-            logMessage("おじさんのミルクが空っぽだから、彼女を仲間にできなかったよ。");
+                game.milk--;
+                game.party.push(monsterToOffer);
+                logMessage(`<span class="monster-name-color">${monsterToOffer.name}</span> が仲間になったよ！`);
+                showSpeechBubble([monsterToOffer], '加入', random);
+                updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+                break;
+            } else {
+                playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+                displayGuideMessage('ミルク不足');
+            }
         }
     }
-    else {
-        playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
-    }
+
     clearActionArea();
 }
 
@@ -893,22 +879,24 @@ async function handleSisterEvent(partyList, random) {
     const selectedMonster = partyList[randomIndex];
 
     // 選出されたモン娘の複製を作成
-    // Monsterクラスのコンストラクタがname, coinAttributes, upkeep, hasBeenSentToBattle, talkerを受け取ることを確認
     const sisterMonster = new Monster(
         selectedMonster.name,
-        [...selectedMonster.coinAttributes], // 硬貨属性も複製
+        [...selectedMonster.coinAttributes],
         selectedMonster.upkeep,
-        selectedMonster.hasBeenSentToBattle, // フラグも複製するかどうかはゲームデザインによる
-        selectedMonster.talker // talker属性も複製
+        selectedMonster.hasBeenSentToBattle,
+        selectedMonster.talker
     );
+    // 追加硬貨も複製
+    sisterMonster.additionalCoins = [...selectedMonster.additionalCoins];
 
     // 複製したモン娘を仲間に加える
     partyList.push(sisterMonster);
     logMessage(`${selectedMonster.name}の生き別れた血の繋がっていない妹が現れた！`);
     logMessage(`${sisterMonster.name}が仲間になった！`);
 
-    // 加入の効果音を再生
     playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+    showSpeechBubble(game.party, '加入', random);
+    displayGuideMessage('妹');
 
     // UIを更新して新しい仲間を表示
     updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
@@ -938,7 +926,7 @@ async function handleFavourEvent() {
     playSfx("寵愛").catch(e => console.error("寵愛の効果音の再生に失敗しました:", e));
 
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して表示を反映
- 
+
     clearActionArea();
 }
 
@@ -948,16 +936,14 @@ async function handleFavourEvent() {
  */
 async function handleFoodSacrificeEvent() {
     clearActionArea();
-    logMessage(`<br/>`);
-    logMessage(`\n<div id="game-messages-phase">--- 祈り ---</div>`);
+    logMessage(`<br><div id="game-messages-phase">--- 祈り ---</div>`);
     displayGuideMessage('祈り');
 
     const foodCost = GAME_CONSTANTS.TRADE_FOOD_INITIAL_COST + game.tradeCountByFood * GAME_CONSTANTS.TRADE_FOOD_SCALING_COST;
-    logMessage(`神様に食料 ${foodCost} を捧げる？ (現在の食料: ${game.food})`);
 
     const actionArea = document.getElementById('action-area');
     const sacrificeButton = document.createElement('button');
-    sacrificeButton.innerText = `捧げる`;
+    sacrificeButton.innerText = `神様に食料を捧げる(${foodCost})`;
     sacrificeButton.dataset.value = 'sacrifice';
     actionArea.appendChild(sacrificeButton);
 
@@ -966,73 +952,118 @@ async function handleFoodSacrificeEvent() {
     skipEventButton.dataset.value = 'skipEvent';
     actionArea.appendChild(skipEventButton);
 
-    const initialChoice = await waitForButtonClick();
-    clearActionArea(); // Initial choice buttons cleared
+    while (true) {
+        const initialChoice = await waitForButtonClick();
+        clearActionArea();
 
-    if (initialChoice === 'skipEvent') {
-        playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
-        logMessage("今夜はやめておくよ。");
-        return; // Exit the function
-    }
-
-    if (initialChoice === 'sacrifice') {
-        if (game.food < foodCost) {
-            // NGの効果音を再生
-            playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
-
-            logMessage("食料が足りないよ。");
+        if (initialChoice === 'skipEvent') {
+            playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+            logMessage("今夜はやめておくよ。");
             return;
         }
 
-        playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
-
-        const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy');
-        const chosenCoins = [];
-        while (chosenCoins.length < 3) {
-            const randomIndex = Math.floor(random() * availableCoins.length);
-            const selectedCoin = availableCoins[randomIndex];
-            if (!chosenCoins.includes(selectedCoin)) {
-                chosenCoins.push(selectedCoin);
+        if (initialChoice === 'sacrifice') {
+            if (game.food < foodCost) {
+                // NGの効果音を再生
+                playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+                displayGuideMessage('食料不足');
+                break;
             }
+
+            playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+
+            const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy');
+            const chosenCoins = [];
+            while (chosenCoins.length < 3) {
+                const randomIndex = Math.floor(random() * availableCoins.length);
+                const selectedCoin = availableCoins[randomIndex];
+                if (!chosenCoins.includes(selectedCoin)) {
+                    chosenCoins.push(selectedCoin);
+                }
+            }
+
+            displayGuideMessage('硬貨選択');
+            // actionArea is already cleared by previous clearActionArea()
+            chosenCoins.forEach((coin, index) => {
+                const button = document.createElement('button');
+                button.className = 'choice-button';
+                // createCoinTooltipHtml を呼び出す際に、人数カウントフラグをtrueに設定
+                const coinHtml = createCoinTooltipHtml(coin.id, coinAttributesMap, false, 1, true); 
+                button.innerHTML = `${coinHtml}`;
+                button.dataset.value = index.toString();
+                actionArea.appendChild(button);
+            });
+
+            const coinChoice = await waitForButtonClick();
+            hideCoinTooltip(); // Tooltip hidden regardless of user choice
+            clearActionArea(); // Clear buttons after coin selection
+
+            const chosenCoinIndex = parseInt(coinChoice);
+            const acquiredCoin = chosenCoins[chosenCoinIndex];
+            game.food -= foodCost;
+            game.tradeCountByFood++;
+            game.favour.push(acquiredCoin.id); // favour に硬貨のIDを追加
+
+            const acquiredCoinHtml = createCoinTooltipHtml(acquiredCoin.id, coinAttributesMap);
+            logMessage(`食料 ${foodCost} を捧げて、${acquiredCoinHtml} の硬貨を授かったよ！`);
+            // 寵愛の効果音を再生
+            playSfx("寵愛").catch(e => console.error("寵愛の効果音の再生に失敗しました:", e));
+
+            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
         }
+        clearActionArea();
 
-        logMessage(`以下の硬貨の中から1つを選んでね。`);
-        displayGuideMessage('硬貨選択');
-        // actionArea is already cleared by previous clearActionArea()
-        chosenCoins.forEach((coin, index) => {
-            const button = document.createElement('button');
-            button.className = 'choice-button';
-            const coinHtml = createCoinTooltipHtml(coin.id, coinAttributesMap);
-            button.innerHTML = `${coinHtml}`;
-            button.dataset.value = index.toString();
-            actionArea.appendChild(button);
-
-            button.addEventListener('mouseover', (event) => showCoinTooltip(event, coin.id, coinAttributesMap));
-            // クリックした際にツールチップを非表示にするイベントリスナーを追加
-            button.addEventListener('click', () => hideCoinTooltip());
-            button.addEventListener('mouseout', hideCoinTooltip);
-        });
-
-        const coinChoice = await waitForButtonClick();
-        hideCoinTooltip(); // Tooltip hidden regardless of user choice
-        clearActionArea(); // Clear buttons after coin selection
-
-        const chosenCoinIndex = parseInt(coinChoice);
-        const acquiredCoin = chosenCoins[chosenCoinIndex];
-        game.food -= foodCost;
-        game.tradeCountByFood++;
-        game.favour.push(acquiredCoin.id); // favour に硬貨のIDを追加
-
-        const acquiredCoinHtml = createCoinTooltipHtml(acquiredCoin.id, coinAttributesMap);
-        logMessage(`食料 ${foodCost} を捧げて、${acquiredCoinHtml} の硬貨を授かったよ！`);
-        // 寵愛の効果音を再生
-        playSfx("寵愛").catch(e => console.error("寵愛の効果音の再生に失敗しました:", e));
-
-        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+        break;
     }
-    clearActionArea();
 }
 
+/**
+ * 仲間の人数分のミルクを消費して仲間全員に追加の硬貨を与えるイベントを処理する。
+ * @returns {Promise<void>}
+ */
+async function handleMilkPartyEvent() {
+    if (game.milk >= game.party.length && game.party.length > 0) {
+        logMessage(`<br><div id="game-messages-phase">--- ミルクパーティ ---</div>`);
+        displayGuideMessage('ミルクパーティ');
+
+        const actionArea = document.getElementById('action-area');
+        clearActionArea();
+
+        const strengthenButton = document.createElement('button');
+        strengthenButton.innerText = `仲間全員を強化する(ミルク${game.party.length}杯)`;
+        strengthenButton.dataset.value = 'strengthen';
+        actionArea.appendChild(strengthenButton);
+
+        const skipButton = document.createElement('button');
+        skipButton.innerText = 'やめておく';
+        skipButton.dataset.value = 'skip_strengthen';
+        actionArea.appendChild(skipButton);
+
+        const choice = await waitForButtonClick();
+        clearActionArea();
+
+        if (choice === 'strengthen') {
+            game.milk -= game.party.length;
+            game.party.forEach(monster => {
+                // 生まれ持った硬貨の中からランダムに1つ選ぶ
+                if (monster.coinAttributes.length > 0) {
+                    const randomCoin = monster.coinAttributes[Math.floor(random() * monster.coinAttributes.length)];
+                    monster.additionalCoins.push(randomCoin);
+                    const coinHtml = createCoinTooltipHtml(randomCoin, coinAttributesMap, true); // isAdditional を true に設定
+                    logMessage(`<span class="monster-name-color">${monster.name}</span> は ${coinHtml} の硬貨を獲得！`);
+                }
+            });
+            playSfx("寵愛").catch(e => console.error("寵愛の効果音の再生に失敗しました:", e));
+            showSpeechBubble(game.party, '食後', random);
+            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+        } else {
+            logMessage(`残念ながらミルクパーティは延期となりました。`);
+            showSpeechBubble(game.party, '延期', random);
+            playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+        }
+    }
+}
 
 /**
  * ５：野営フェーズ。
@@ -1042,12 +1073,10 @@ async function handleFoodSacrificeEvent() {
  * @returns {Promise<boolean|string>} 野営成功でtrue、ゲームオーバーでfalse、ミルク消費で'recovered'。
  */
 async function conductCamp(expeditionParty, currentArea) {
-    logMessage(`<br/>`);
-    logMessage(`\n<div id="game-messages-phase">--- 野営フェーズ ---</div>`);
     game.currentPhase = 'campPhase';
-
-    // 野営の効果音を再生
+    logMessage(`<br><div id="game-messages-phase">--- 野営フェーズ ---</div>`);
     playSfx("野営").catch(e => console.error("野営の効果音の再生に失敗しました:", e));
+    displayGuideMessage('野営');
 
     let foodGained = 0;
     expeditionParty.forEach(monster => {
@@ -1056,7 +1085,7 @@ async function conductCamp(expeditionParty, currentArea) {
         // 漁の硬貨を水の硬貨として扱うための調整
         const effectiveAreaCoinAttributesForFood = [...currentArea.coinAttributes];
 
-        monster.coinAttributes.forEach(monsterCoinAttr => {
+        monster.allCoins.forEach(monsterCoinAttr => {
             let currentMonsterCoinAttr = monsterCoinAttr;
             if (monsterCoinAttr === 'fishing' && effectiveAreaCoinAttributesForFood.includes('water')) {
                 currentMonsterCoinAttr = 'water'; // 擬似的に「水」として扱う
@@ -1077,7 +1106,7 @@ async function conductCamp(expeditionParty, currentArea) {
         foodGained += monsterFoodContribution;
     });
     game.food += foodGained;
-    logMessage(`探索で食料を${foodGained}獲得したよ。現在の食料: ${game.food}`);
+    logMessage(`探索で食料を${foodGained}獲得したよ。`);
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
 
     // 食費の計算
@@ -1098,19 +1127,14 @@ async function conductCamp(expeditionParty, currentArea) {
 
     logMessage(`残り食料: ${game.food}`);
 
-    if (game.food < 0) {
-        showSpeechBubble(game.party, '空腹', random);
-    }
-    else {
-        showSpeechBubble(game.party, '食後', random);
-    }
+    game.food < 0 ? showSpeechBubble(game.party, '空腹', random) : showSpeechBubble(game.party, '食後', random);
 
     // 珍味獲得の判定をここに追加
     let delicacyFound = false;
     for (const member of game.expeditionParty) { // 派遣されたモン娘のみを対象にする
         for (const delicacy of delicacies) {
             // 探索モン娘の属性と珍味のexplorerCoinAttributesに共通の属性があるかチェック
-            const monsterAttributeMatch = delicacy.explorerCoinAttributes.every(attr => member.coinAttributes.includes(attr));
+            const monsterAttributeMatch = delicacy.explorerCoinAttributes.every(attr => member.allCoins.includes(attr));
             // 探索エリアの属性と珍味のareaCoinAttributesに共通の属性があるかチェック
             const areaAttributeMatch = delicacy.areaCoinAttributes.every(attr => currentArea.coinAttributes.includes(attr));
 
@@ -1119,7 +1143,7 @@ async function conductCamp(expeditionParty, currentArea) {
                     game.milk += delicacy.milkConversion;
                     logMessage(`${member.name}が${delicacy.name}を見つけてきたよ！　栄養満点だからおじさんが食べなよ。`);
                     delicacyFound = true;
-                    updateUI(game, coinAttributesMap, [], currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UI更新
+                    updateUI(game, coinAttributesMap, [], currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
                     break; // この珍味は獲得したので次のモン娘へ
                 }
             }
@@ -1133,6 +1157,9 @@ async function conductCamp(expeditionParty, currentArea) {
 
     // 食料を対価に硬貨を獲得するイベントを発生させる
     await handleFoodSacrificeEvent();
+
+    // 仲間の人数分のミルクを消費して仲間全員に追加の硬貨を与えるイベントを発生させる。
+    await handleMilkPartyEvent();
 
     // 食料が尽きた際の救済処置
     if (game.food < 0) {
@@ -1181,7 +1208,7 @@ function endGame(isCleared) {
         logMessage("<br>");
         logMessage("そして100億円で高名な錬金術師を雇い、遂に僕もフラスコの外に出られたよ！");
         logMessage("おじさん、ありがとう！");
-        
+
         // ゲームクリア後のホムンクルスと錬金術師の表示
         if (homunculusImage && imagePaths["外に出たホムンクルス"]) {
             homunculusImage.src = imagePaths["外に出たホムンクルス"];
@@ -1220,9 +1247,8 @@ function endGame(isCleared) {
  * @param {Object} currentArea - 地形。
  */
 async function event(partyList, currentArea) {
-    logMessage(`<br/>`);
-    logMessage(`\n<div id="game-messages-phase">--- イベントフェーズ ---</div>`);
     game.currentPhase = 'event';
+    logMessage(`<br><div id="game-messages-phase">--- イベントフェーズ ---</div>`);
 
     // イベントの種類設定
     const eventPool = {
@@ -1295,8 +1321,7 @@ async function gameLoop() {
             playMusic('レベル2');
         }
 
-        logMessage(`<br/>`);
-        logMessage(`<div id="game-messages-days">\n=== ${game.days}日目 ===</div>`);
+        logMessage(`<br><div id="game-messages-days">\n=== ${game.days}日目 ===</div>`);
         document.getElementById('days-display').innerText = game.days;
 
         let currentArea;
@@ -1351,9 +1376,7 @@ async function gameLoop() {
             if (game.food < 0) break; // 派遣選択後に食料が尽きることはないが、念のため
 
             raidResult = await handleRaid(restingParty, currentArea);
-            if (!raidResult) {
-                break; // 襲撃でゲームオーバーになった場合
-            }
+            if (!raidResult) break; // 襲撃でゲームオーバーになった場合
 
             // イベントフェーズに入る前にワンクッション置く
             game.currentPhase = 'campPreparation';
@@ -1435,15 +1458,12 @@ function resetGameToInitialState() {
 
     // ホムンクルスの画像を初期状態に戻す
     const homunculusImage = document.getElementById('homunculus-image');
-    // homunculusContainerはstyle.cssで固定位置のオーバーレイとして定義されているため、
-    // ここでpositionやmarginをリセットする必要はありません。
-    // homunculusImageのサイズもstyle.cssで定義されているため、ここではリセットしません。
     if (homunculusImage && imagePaths["ホムンクルス"]) {
         homunculusImage.src = imagePaths["ホムンクルス"];
         homunculusImage.style.borderRadius = ''; // スタイルをリセット
         homunculusImage.style.boxShadow = ''; // スタイルをリセット
     }
-    
+
     const rightAlchemyImage = document.getElementById('right-alchemy-image');
     const leftAlchemyImage = document.getElementById('left-alchemy-image');
 
@@ -1456,24 +1476,6 @@ function resetGameToInitialState() {
 
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを通常状態に戻す
 }
-
-/**
- * 硬貨属性のIDから、ツールチップ表示用のHTML文字列を生成する。
- * @param {string} coinId - 硬貨属性のID (e.g., 'plain', 'magic')。
- * @param {object[]} map - 硬貨属性の定義マップ。
- * @returns {string} ツールチップ表示用のHTML文字列。
- */
-function createCoinTooltipHtml(coinId, map) {
-    // getCoinAttributeName 関数を使って、スタイルが適用されたHTMLを生成
-    const styledCoinHtml = getCoinAttributeName(coinId, map);
-
-    // 生成されたHTMLをツールチップのターゲットとしてラップ
-    // onmouseoverとonmouseout属性を再度追加
-    return `<span class="coin-tooltip-target" data-coin-id="${coinId}" onmouseover="window.showCoinTooltip(event, '${coinId}', window.coinAttributesMap)" onmouseout="window.hideCoinTooltip()">${styledCoinHtml}</span>`;
-}
-// createCoinTooltipHtml をグローバルスコープに公開
-window.createCoinTooltipHtml = createCoinTooltipHtml;
-
 
 // DOMContentLoaded イベントで要素を取得し、イベントリスナーを設定
 document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
@@ -1575,10 +1577,9 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
             gameLoop();
         });
     } else {
-        console.error("DOM要素 'start-game-button' が見つかりませんでした。ゲームを開始できません。");
+        console.error("DOM element 'start-game-button' が見つかりませんでした。ゲームを開始できません。");
     }
 
     // 初期UI表示
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
 });
-

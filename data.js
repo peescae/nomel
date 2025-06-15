@@ -13,20 +13,20 @@ export const coinAttributesMap = [
     { id: 'dark', name: '闇', color: 'rgb(29, 9, 73)', help: '特殊効果なし。' },
     { id: 'sky', name: '空', color: 'rgb(88, 237, 248)', help: '特殊効果なし。' },
     { id: 'magic', name: '魔', color: 'rgb(132, 0, 255)', help: '味方全体の魔の総数が敵全体の魔の総数を超える場合、必ず表になる。' },
-    { id: 'flower', name: '花', color: 'rgb(233, 112, 202)', help: '表の場合、味方全体の戦闘手当に0.5を乗算する。' },
-    { id: 'fishing', name: '漁', color: 'rgb(0, 85, 134)', help: '表の場合、水の硬貨を持つ全ての敵の戦力値に1を減算する。探索時、この硬貨を水の硬貨として扱う。' },
+    { id: 'flower', name: '花', color: 'rgb(233, 112, 202)', help: '味方全体の戦闘手当に0.75を乗算する。' },
+    { id: 'fishing', name: '漁', color: 'rgb(0, 85, 134)', help: '表の場合、水の硬貨を持つ全ての敵の戦力値に1を減算する。半減まで可能。探索時、この硬貨を水の硬貨として扱う。' },
     { id: 'water', name: '水', color: 'rgb(0, 162, 255)', help: '特殊効果なし。' },
     { id: 'snow', name: '雪', color: 'rgb(173, 216, 230)', help: '特殊効果なし。' },
     { id: 'trap', name: '罠', color: 'rgb(129, 86, 55)', help: '待機時、全ての敵の戦力値に1を減算する。' },
-    { id: 'bow', name: '弓', color: 'rgb(102, 96, 96)', help: '表の場合、空の硬貨を持つ全ての敵の戦力値に1を減算する。' },
+    { id: 'bow', name: '弓', color: 'rgb(102, 96, 96)', help: '表の場合、空の硬貨を持つ全ての敵の戦力値に1を減算する。半減まで可能。' },
     { id: 'iron', name: '鉄', color: 'rgb(150, 150, 150)', help: '表の場合、この硬貨が産出する戦力値に2を乗算する。' },
     { id: 'scale', name: '鱗', color: 'rgb(123, 155, 92)', help: '裏の場合、一度だけ硬貨を振り直す。' },
     { id: 'blood', name: '血', color: 'rgb(180, 0, 0)', help: '表の場合、自分の戦闘手当を0にする。' },
     { id: 'oni', name: '鬼', color: 'rgb(200, 50, 0)', help: '必ず表になる。' },
     { id: 'power', name: '力', color: 'rgb(255, 165, 0)', help: '表の場合、この硬貨が産出する戦力値に2を乗算する。' },
-    { id: 'thunder', name: '雷', color: 'rgb(255, 255, 0)', help: '表の場合、雷の硬貨を持たない全ての敵の戦力値に1を減算する。' },
-    { id: 'fire', name: '火', color: 'rgb(255, 69, 0)', help: '表の場合、火の硬貨を持たない全ての敵の戦力値に1を減算する。' },
-    { id: 'poison', name: '毒', color: 'rgb(128, 0, 128)', help: '表の場合、毒の硬貨を持たない全ての敵の戦力値に1を減算する。' },
+    { id: 'thunder', name: '雷', color: 'rgb(255, 255, 0)', help: '表の場合、雷の硬貨を持たない全ての敵の戦力値に1を減算する。半減まで可能。' },
+    { id: 'fire', name: '火', color: 'rgb(255, 69, 0)', help: '表の場合、火の硬貨を持たない全ての敵の戦力値に1を減算する。半減まで可能。' },
+    { id: 'poison', name: '毒', color: 'rgb(128, 0, 128)', help: '表の場合、毒の硬貨を持たない全ての敵の戦力値に1を減算する。半減まで可能。' },
     { id: 'enemy', name: '敵', color: 'rgb(50, 50, 50)', help: '敵専用。必ず表になる。' },
 ];
 
@@ -198,7 +198,7 @@ export const life = [
     { name: '農家', help: '野営時の総食料消費量に0.8を乗算する。' },
     { name: '冒険家', help: '地形の選択肢の数に2を加算する。' },
     { name: '軍人', help: 'コイントスの回数に2を加算する。' },
-    { name: '炉裏魂', help: '野営時のミルクの生産量に1を加算する。硬貨の枚数が4枚以上のモン娘を仲間にできない。' },
+    { name: '炉裏魂', help: '野営時のミルクの生産量に1を加算する。硬貨の枚数が4枚以上の種族を仲間にできない。' },
 ];
 
 // その他のゲーム定数
@@ -222,11 +222,14 @@ export const GAME_CONSTANTS = {
     TRADE_FOOD_INITIAL_COST: 30, // 食料交換の基本数量
     TRADE_FOOD_SCALING_COST: 10, // 食料交換のスケーリング量
     RAID_TRAP_REDUCTION_FACTOR: 0.6, // 罠の硬貨による襲撃確率減少係数
-    RAID_FLOWER_REDUCTION_FACTOR: 0.5, // 花の硬貨による戦闘手当減少係数
+    RAID_FLOWER_REDUCTION_FACTOR: 0.8, // 花の硬貨による戦闘手当減少係数
     ENEMY_COIN_SCALING_DAYS: 4, // 敵の硬貨枚数スケーリングの日間隔
     ENEMY_COUNT_SCALING_DAYS: 2, // 敵の出現数スケーリングの日間隔
+    ENEMY_MIN_COIN_COUNT: 3, // 敵の硬貨の最小枚数
     AREA_COIN_SCALING_DAYS: 4, // 地形の硬貨枚数のスケーリングの日間隔
-    DELICACY_DROP_CHANCE: 0.25, // 珍味の獲得確率
+    DELICACY_DROP_CHANCE: 1.0, // 珍味の獲得確率
     COIN_TAIL_OPACITY: 0.2, // 硬貨が裏面の場合の透過率
     FARMER_SAVINGS: 0.8, // 農家が節約する食料の消費倍率
+    SELECT_AREA_SIZE: 3, // 探索エリアの選択肢の数
+    SELECT_AREA_ADVENTURER: 5, // 冒険家の探索エリアの選択肢の数
 };

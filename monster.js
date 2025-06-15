@@ -5,24 +5,25 @@
  */
 
 // 必要なデータをインポート
-import { monsterTemplates, coinAttributesMap, GAME_CONSTANTS } from './data.js'; 
+import { monsterTemplates, coinAttributesMap, GAME_CONSTANTS } from './data.js';
 
 // モン娘の基本構造
 export class Monster {
     /**
      * 新しいモン娘インスタンスを作成する。
      * @param {string} name - モン娘の名前。
-     * @param {string[]} coinAttributes - モン娘が持つ硬貨属性の配列。
+     * @param {string[]} coinAttributes - モン娘が持つ先天的な硬貨属性の配列。
      * @param {number} upkeep - モン娘の食費。
      * @param {boolean} hasBeenSentToBattle - ボス戦などで一度派遣されたかどうか。
      * @param {string} talker - モン娘の話し方タイプ（例: '真面目', '元気'）。
      */
     constructor(name, coinAttributes, upkeep = 0, hasBeenSentToBattle = false, talker = 'none') {
         this.name = name;
-        this.coinAttributes = coinAttributes;
+        this.coinAttributes = coinAttributes; // 先天的な硬貨
+        this.additionalCoins = []; // 後天的に追加される硬貨
         this.upkeep = upkeep;
         this.hasBeenSentToBattle = hasBeenSentToBattle;
-        this.talker = talker; // 新しいtalkerフィールド
+        this.talker = talker;
     }
 
     /**
@@ -30,7 +31,15 @@ export class Monster {
      * @returns {number} 硬貨の総数。
      */
     get totalCoins() {
-        return this.coinAttributes.length;
+        return this.coinAttributes.length + this.additionalCoins.length;
+    }
+
+    /**
+     * モン娘が持つ全ての硬貨（先天的なものと後天的なもの）の配列を取得する。
+     * @returns {string[]} 全ての硬貨属性の配列。
+     */
+    get allCoins() {
+        return [...this.coinAttributes, ...this.additionalCoins];
     }
 }
 
@@ -102,7 +111,7 @@ export function getUniqueRandomMonsters(game, count, templatesPool, useWeighting
             const weightedTemplates = currentAvailableTemplates.map(template => {
                 const numCoins = template.coins.length;
                 // 定義されていない枚数にはデフォルトの重み1を適用
-                const weight = weights[numCoins] !== undefined ? weights[numCoins] : 1; 
+                const weight = weights[numCoins] !== undefined ? weights[numCoins] : 1;
                 totalWeight += weight;
                 return { template, weight };
             });
@@ -130,7 +139,7 @@ export function getUniqueRandomMonsters(game, count, templatesPool, useWeighting
 
         if (selectedTemplate) {
             // talker属性をランダムに選択してMonsterインスタンスに渡す
-            const chosenTalker = selectedTemplate.talker && selectedTemplate.talker.length > 0 
+            const chosenTalker = selectedTemplate.talker && selectedTemplate.talker.length > 0
                 ? selectedTemplate.talker[Math.floor(random() * selectedTemplate.talker.length)]
                 : 'none'; // talkerが定義されていない場合は'none'
             uniqueMonsters.push(new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker));
@@ -144,7 +153,7 @@ export function getUniqueRandomMonsters(game, count, templatesPool, useWeighting
 }
 
 /**
- * 地形に合った敵モン娘を生成する。
+ * 地形に合った敵モン娘を生成する。11日目以降は追加硬貨を持つ可能性がある。
  * @param {number} count - 生成する敵の数。
  * @param {object} currentArea - 現在の地形情報。
  * @param {number} currentDays - 現在の日数。
@@ -153,10 +162,10 @@ export function getUniqueRandomMonsters(game, count, templatesPool, useWeighting
  */
 export function generateAreaSpecificEnemies(count, currentArea, currentDays, random) {
     // 現在の日数に応じて敵の最大硬貨枚数を決定
-    const maxCoinsAllowed = 3 + Math.floor((currentDays - 1) / GAME_CONSTANTS.ENEMY_COIN_SCALING_DAYS);
+    const maxCoinsAllowed = GAME_CONSTANTS.ENEMY_MIN_COIN_COUNT + Math.floor((currentDays - 1) / GAME_CONSTANTS.ENEMY_COIN_SCALING_DAYS);
 
     // フィルターされたモン娘テンプレートリストを作成 (enemy属性を持たないもののみ)
-    const availableMonsterTemplates = monsterTemplates.filter(template => 
+    const availableMonsterTemplates = monsterTemplates.filter(template =>
         template.coins.length <= maxCoinsAllowed && !template.coins.includes('enemy')
     );
 
@@ -188,13 +197,29 @@ export function generateAreaSpecificEnemies(count, currentArea, currentDays, ran
         const chosenTalker = selectedTemplate.talker && selectedTemplate.talker.length > 0
             ? selectedTemplate.talker[Math.floor(random() * selectedTemplate.talker.length)]
             : 'none'; // talkerが定義されていない場合は'none'
-        generatedEnemies.push(new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker));
+        const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
+
+        // ★★★ START: 11日目以降の敵に追加硬貨を付与 ★★★
+        if (currentDays > GAME_CONSTANTS.BOSS_DAYS) {
+            const maxAdditionalCoins = Math.floor((currentDays - GAME_CONSTANTS.BOSS_DAYS) / 2);
+            const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+
+            for (let j = 0; j < numAdditionalCoins; j++) {
+                if (newEnemy.coinAttributes.length > 0) {
+                    const randomCoin = newEnemy.coinAttributes[Math.floor(random() * newEnemy.coinAttributes.length)];
+                    newEnemy.additionalCoins.push(randomCoin);
+                }
+            }
+        }
+        // ★★★ END: 追加硬貨付与 ★★★
+
+        generatedEnemies.push(newEnemy);
     }
     return generatedEnemies;
 }
 
 /**
- * 特殊襲撃用の敵モン娘を生成する。
+ * 特殊襲撃用の敵モン娘を生成する。11日目以降は追加硬貨を持つ可能性がある。
  * @param {number} count - 生成する敵の数。
  * @param {number} currentDays - 現在の日数。
  * @param {Function} random - 疑似乱数生成関数。
@@ -205,7 +230,7 @@ export function generateSpecialRaidEnemies(count, currentDays, random) {
     const maxCoinsAllowed = 3 + Math.floor((currentDays - 1) / GAME_CONSTANTS.ENEMY_COIN_SCALING_DAYS);
 
     // 名前に「グーラ」を含むモン娘テンプレートのみを対象とする
-    const goolaTemplates = monsterTemplates.filter(template => 
+    const goolaTemplates = monsterTemplates.filter(template =>
         template.name.includes('グーラ') && template.coins.length <= maxCoinsAllowed
     );
 
@@ -221,7 +246,23 @@ export function generateSpecialRaidEnemies(count, currentDays, random) {
         const chosenTalker = selectedTemplate.talker && selectedTemplate.talker.length > 0
             ? selectedTemplate.talker[Math.floor(random() * selectedTemplate.talker.length)]
             : 'none'; // talkerが定義されていない場合は'none'
-        generatedEnemies.push(new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker));
+        const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
+
+        // ★★★ START: 11日目以降の敵に追加硬貨を付与 ★★★
+        if (currentDays > GAME_CONSTANTS.BOSS_DAYS) {
+            const maxAdditionalCoins = Math.floor((currentDays - GAME_CONSTANTS.BOSS_DAYS) / 2);
+            const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+
+            for (let j = 0; j < numAdditionalCoins; j++) {
+                if (newEnemy.coinAttributes.length > 0) {
+                    const randomCoin = newEnemy.coinAttributes[Math.floor(random() * newEnemy.coinAttributes.length)];
+                    newEnemy.additionalCoins.push(randomCoin);
+                }
+            }
+        }
+        // ★★★ END: 追加硬貨付与 ★★★
+
+        generatedEnemies.push(newEnemy);
     }
     return generatedEnemies;
 }
