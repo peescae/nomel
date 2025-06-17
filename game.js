@@ -682,6 +682,7 @@ async function handleBossBattle(currentArea) {
  * @returns {Promise<void>} ラスボス戦が終了したときに解決するPromise。
  */
 async function startFinalBossBattle() {
+    clearActionArea();
     logMessage("連邦の中枢に到達！");
     displayGuideMessage('ボス戦1');
     game.currentPhase = 'finalBossAreaSelection';
@@ -699,7 +700,7 @@ async function startFinalBossBattle() {
         chosenAreas.push(mansionArea); // 館を固定で追加
     }
     // 残りの2つをランダムに選択（重複なし）
-    const areaCount = game.playerLife.name === '冒険家' ? 3 : 5;
+    const areaCount = game.playerLife.name === '冒険家' ? 5 : 3;
     while (chosenAreas.length < areaCount && otherEligibleAreas.length > 0) {
         const randomIndex = Math.floor(random() * otherEligibleAreas.length);
         const selectedArea = otherEligibleAreas.splice(randomIndex, 1)[0];
