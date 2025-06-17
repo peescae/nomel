@@ -1425,7 +1425,7 @@ async function gameLoop() {
         if (actionArea) {
             actionArea.innerHTML = '<button id="conduct-camp-button" data-value="conduct-camp">野営する</button>';
         }
-        await waitForButtonClick(); // ボタンがクリックされるまで待機
+        await waitForButtonClick();
 
         let campResult = await conductCamp(expeditionParty, currentArea);
         if (!campResult) { // campResultがfalseの場合（ゲームオーバー）
@@ -1515,12 +1515,30 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
     const playerLifeImage = document.getElementById('player-life-image');
     const toggleCoinDisplayButton = document.getElementById('toggle-coin-display-button');
 
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const progressBarFill = document.getElementById('progress-bar-fill');
+    const progressPercentage = document.getElementById('progress-percentage');
+
+    // ローディング画面を表示
+    loadingOverlay.style.display = 'flex';
+
     // AudioContextの初期化
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
+    // 進捗更新用のコールバック関数
+    const updateOverallProgress = (loaded, total) => {
+        const percentage = total === 0 ? 100 : Math.floor((loaded / total) * 100);
+        if (progressBarFill) {
+            progressBarFill.style.width = `${percentage}%`;
+        }
+        if (progressPercentage) {
+            progressPercentage.innerText = `${percentage}%`;
+        }
+    };
+
     // 全てのアセットをプリロード
     console.log('Preloading all assets...');
-    const preloadedAssets = await preloadAllAssets(audioContext);
+    const preloadedAssets = await preloadAllAssets(audioContext, updateOverallProgress);
     imagePaths = preloadedAssets.imagePaths;
     audioBuffers = preloadedAssets.audioBuffers;
     
@@ -1530,6 +1548,10 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
     await initMusicPlayer(audioContext, preloadedAssets.musicPaths, preloadedAssets.soundPaths); // musicManagerの初期化にaudioContextとpathsを渡す
 
     console.log('Asset preloading complete. Game is ready to start.');
+
+    // ローディング画面を非表示
+    loadingOverlay.style.display = 'none';
+
 
     // 硬貨表示切り替えボタンのイベントリスナー
     if (toggleCoinDisplayButton) {
