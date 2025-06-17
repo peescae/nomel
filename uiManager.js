@@ -21,19 +21,17 @@ let draggedItem = null; // ドラッグ中の要素を保持
 // 硬貨表示の状態を管理する変数
 let showCoinsInPartyList = true; // 初期値はtrue（表示）
 
-// imagePaths.jsonから画像パスをロード
+// imagePaths.jsonから画像パスをロードする代わりに、外部から設定できるように変更
 let imagePaths = {};
-let imagePathsLoaded = false; // 画像パスのロード状態を追跡するフラグ
-fetch('./imagePaths.json')
-    .then(response => response.json())
-    .then(data => {
-        imagePaths = data;
-        imagePathsLoaded = true; // ロード完了
-        console.log('Image paths loaded:', imagePaths);
-    })
-    .catch(error => {
-        console.error('Error loading image paths:', error);
-    });
+
+/**
+ * 外部から画像パスを設定するための関数。
+ * @param {Object.<string, string>} paths - ロードされた画像パスオブジェクト。
+ */
+export function setImagePaths(paths) {
+    imagePaths = paths;
+    console.log('Image paths set in uiManager:', imagePaths);
+}
 
 /**
  * モン娘の硬貨情報ポップアップ要素を生成する。
@@ -611,16 +609,10 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
         partyList.innerHTML = '';
         const displayFixedSlots = maxPartySize; // UI表示で常に確保する枠の数
 
-        // 画像パスがまだロードされていない場合は待機
-        if (!imagePathsLoaded) {
-            await new Promise(resolve => {
-                const interval = setInterval(() => {
-                    if (imagePathsLoaded) {
-                        clearInterval(interval);
-                        resolve();
-                    }
-                }, 50);
-            });
+        // 画像パスが設定されるまで待機（setImagePathsが呼ばれるまで）
+        if (Object.keys(imagePaths).length === 0) {
+            console.warn("Image paths not yet loaded in uiManager. Waiting...");
+            await new Promise(resolve => setTimeout(resolve, 100)); // 少し待機して再試行
         }
 
         // 実際のモン娘を表示
@@ -790,6 +782,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
                 enemyImage.alt = enemy.name;
                 enemyImage.width = 128;
                 enemyImage.height = 128;
+                enemyImage.style.imageRendering = 'pixelated';
                 enemyImage.classList.add('monster-image');
                 li.appendChild(enemyImage);
 

@@ -6,16 +6,28 @@ let soundPaths = {}; // 効果音ファイルパスと設定
 let musicPaths = {}; // 音楽ファイルパスと設定
 let musicGainNode; // 音楽の音量調節用GainNode
 let sfxGainNode;   // 効果音の音量調節用GainNode
+let preloadedAudioBuffers = {}; // プリロードされたオーディオバッファを保持
 
 /**
- * 音楽プレイヤーを初期化し、音楽ファイルのパスと音量設定を読み込み、音量スライダーのイベントリスナーを設定します。
+ * 外部からオーディオバッファを設定するための関数。
+ * @param {Object.<string, AudioBuffer>} buffers - プリロードされたオーディオバッファオブジェクト。
  */
-export async function initMusicPlayer() {
+export function setAudioBuffers(buffers) {
+    preloadedAudioBuffers = buffers;
+    console.log('Audio buffers set in musicManager:', preloadedAudioBuffers);
+}
+
+/**
+ * 音楽プレイヤーを初期化し、音量スライダーのイベントリスナーを設定します。
+ * @param {AudioContext} context - 共有のAudioContextインスタンス。
+ * @param {Object} initialMusicPaths - musicPaths.jsonから読み込まれた音楽パスと設定。
+ * @param {Object} initialSoundPaths - soundPaths.jsonから読み込まれた効果音パスと設定。
+ */
+export async function initMusicPlayer(context, initialMusicPaths, initialSoundPaths) {
     try {
-        // AudioContextが既に存在する場合は再利用
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
+        audioContext = context;
+        musicPaths = initialMusicPaths;
+        soundPaths = initialSoundPaths;
 
         // GainNodeを初期化
         musicGainNode = audioContext.createGain();
@@ -23,22 +35,6 @@ export async function initMusicPlayer() {
 
         sfxGainNode = audioContext.createGain();
         sfxGainNode.connect(audioContext.destination);
-
-        // musicPaths.jsonを読み込み、パスと音量設定を保存
-        const musicResponse = await fetch('./musicPaths.json');
-        if (!musicResponse.ok) {
-            throw new Error(`HTTP error! status: ${musicResponse.status}`);
-        }
-        musicPaths = await musicResponse.json();
-        console.log("Music paths loaded:", musicPaths); // Debug log
-
-        // soundPaths.jsonを読み込み、パスと音量設定を保存
-        const soundResponse = await fetch('./soundPaths.json');
-        if (!soundResponse.ok) {
-            throw new Error(`HTTP error! status: ${soundResponse.status}`);
-        }
-        soundPaths = await soundResponse.json();
-        console.log("Sound paths loaded:", soundPaths); // Debug log
 
         // スライダー要素を取得
         const musicVolumeSlider = document.getElementById('music-volume');
@@ -59,8 +55,10 @@ export async function initMusicPlayer() {
             });
         }
 
+        console.log("Music player initialized.");
+
     } catch (error) {
-        console.error("Error initializing music player or loading music paths:", error);
+        console.error("Error initializing music player:", error);
     }
 }
 
@@ -86,15 +84,14 @@ export async function playMusic(name) {
         return;
     }
 
-    try {
-        console.log(`Attempting to load and play music: ${musicInfo.path}`); // Debug log
-        const response = await fetch(musicInfo.path);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    // プリロードされたバッファを使用
+    const audioBuffer = preloadedAudioBuffers[name];
+    if (!audioBuffer) {
+        console.error(`Audio buffer for ${name} not preloaded.`);
+        return;
+    }
 
+    try {
         currentSource = audioContext.createBufferSource();
         currentSource.buffer = audioBuffer;
         currentSource.loop = true; // ループを有効にする
@@ -151,14 +148,14 @@ export async function playSfx(sfxName) {
         return;
     }
 
-    try {
-        const response = await fetch(sfxInfo.path);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    // プリロードされたバッファを使用
+    const audioBuffer = preloadedAudioBuffers[sfxName];
+    if (!audioBuffer) {
+        console.error(`Audio buffer for ${sfxName} not preloaded.`);
+        return;
+    }
 
+    try {
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
 

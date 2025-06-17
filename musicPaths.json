@@ -2,5 +2,5 @@
     "レベル1": { "path": "./music/Level1.wav", "start": 4.0, "end": 8.0, "volume": 1.0 },
     "レベル2": { "path": "./music/Level2.wav", "start": 4.0, "end": 8.0, "volume": 1.0 },
     "ボス": { "path": "./music/Boss.wav", "start": 8.0, "end": 16.0, "volume": 1.0 },
-    "勝利": { "path": "./music/Winner.wav", "start": 8.0, "end": 16.0, "volume": 1.0 }
+    "ゲームクリア": { "path": "./music/Winner.wav", "start": 8.0, "end": 16.0, "volume": 1.0 }
 }

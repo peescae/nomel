@@ -18,13 +18,15 @@ import {
     hideLifeTooltip,
     toggleCoinDisplay,
     createCoinTooltipHtml,
-    showCoinTooltip
-} from './uiManager.js';
+    showCoinTooltip,
+    setImagePaths // uiManagerからsetImagePathsをインポート
+} from './uiManager.js'; // uiManager.jsからsetImagePathsをインポートするように変更
 import { conductFight } from './battle.js';
 import { updateEstimatedFoodGain } from './food.js';
-import { initMusicPlayer, playMusic, playSfx, stopMusic } from './musicManager.js';
+import { initMusicPlayer, playMusic, playSfx, stopMusic, setAudioBuffers as setMusicAudioBuffers } from './musicManager.js'; // musicManagerからsetAudioBuffersをインポートするように変更
 import { displayGuideMessage } from './helpUI.js';
 import { showSpeechBubble } from './speechBubbleManager.js';
+import { preloadAllAssets } from './preloadManager.js'; // preloadManagerをインポート
 
 // coinAttributesMapをグローバルスコープで利用可能にする
 // HTMLのonmouseover属性などから直接呼び出すため
@@ -70,6 +72,7 @@ window.game = game;
 
 let random; // 疑似乱数生成関数
 let imagePaths; // 画像パスを保持する変数
+let audioBuffers; // プリロードされたオーディオバッファを保持する変数
 
 /**
  * １：モン娘の加入フェーズ (ゲーム開始時のみ)。
@@ -1227,7 +1230,7 @@ function endGame(isCleared) {
     if (isCleared) {
         displayGuideMessage('クリア');
 
-        playMusic('勝利');
+        playMusic('ゲームクリア'); // 「勝利」から「ゲームクリア」に変更
         logMessage("やったね！　王子を救出したよ！");
         logMessage("<br>");
         logMessage("そして100億円で高名な錬金術師を雇い、遂に僕もフラスコの外に出られたよ！");
@@ -1512,19 +1515,21 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
     const playerLifeImage = document.getElementById('player-life-image');
     const toggleCoinDisplayButton = document.getElementById('toggle-coin-display-button');
 
-    // 音楽プレイヤーの初期化
-    await initMusicPlayer();
+    // AudioContextの初期化
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-    // imagePaths.json から効果音のパスを読み込む
-    try {
-        const response = await fetch('./imagePaths.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        imagePaths = await response.json();
-    } catch (error) {
-        console.error("imagePaths.json の読み込み中にエラーが発生しました:", error);
-    }
+    // 全てのアセットをプリロード
+    console.log('Preloading all assets...');
+    const preloadedAssets = await preloadAllAssets(audioContext);
+    imagePaths = preloadedAssets.imagePaths;
+    audioBuffers = preloadedAssets.audioBuffers;
+    
+    // uiManagerとmusicManagerにプリロードされたパスとバッファを渡す
+    setImagePaths(imagePaths);
+    setMusicAudioBuffers(audioBuffers); // musicManager.js の setAudioBuffers を呼び出す
+    await initMusicPlayer(audioContext, preloadedAssets.musicPaths, preloadedAssets.soundPaths); // musicManagerの初期化にaudioContextとpathsを渡す
+
+    console.log('Asset preloading complete. Game is ready to start.');
 
     // 硬貨表示切り替えボタンのイベントリスナー
     if (toggleCoinDisplayButton) {
