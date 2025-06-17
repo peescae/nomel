@@ -1,0 +1,108 @@
+/* delicacyHelpUI.css */
+
+/* 珍味ヘルプウィンドウのスタイル */
+#delicacy-help-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent; /* 背景色を透明に変更 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2001; /* ホムンクルスヘルプより低いz-index */
+    display: none; /* 初期状態では非表示 */
+    pointer-events: none; /* 下層要素へのクリックを透過させる */
+}
+
+#delicacy-help-modal {
+    background-color: #3b3f47;
+    border: 2px solid #ffcc00; /* 珍味の色に合わせて黄色に */
+    border-radius: 10px;
+    padding: 4px 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    max-width: 600px; /* 少し小さめに設定 */
+    min-width: 320px;
+    max-height: 90%;
+    color: #f8f8f2;
+    font-size: 1.0em;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative; /* ドラッグ可能にするため */
+    cursor: grab; /* ドラッグ可能であることを示す */
+    pointer-events: auto; /* モーダル自体へのクリックを有効にする */
+}
+
+#delicacy-help-modal h3 {
+    color: #ffcc00; /* タイトル色も黄色に */
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: 1.6em; /* 少し小さめに */
+}
+
+#delicacy-help-content {
+    text-align: left;
+    max-height: 500px; /* 高さ調整 */
+    overflow-y: auto;
+    background-color: #2e3136;
+    padding: 16px;
+    border-radius: 8px;
+    line-height: 1.5;
+    margin-bottom: 4px;
+    font-size: 0.9em; /* フォントサイズ調整 */
+}
+
+#delicacy-help-content p {
+    margin: 6px 0;
+    word-wrap: break-word;
+}
+
+#delicacy-list {
+    margin-top: 15px;
+}
+
+.delicacy-item {
+    background-color: #4a4e55;
+    border: 1px solid #666;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 0.95em;
+    line-height: 1.4;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.delicacy-item strong {
+    color: #a2ff7e; /* 珍味名を強調 */
+    font-size: 1.1em;
+}
+
+.delicacy-item .coin-attributes {
+    display: inline-flex; /* 硬貨属性を横並びに */
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    #delicacy-help-modal {
+        max-width: 95%;
+        min-width: 280px;
+        padding: 15px;
+        font-size: 0.9em;
+    }
+
+    #delicacy-help-modal h3 {
+        font-size: 1.4em;
+    }
+
+    #delicacy-help-content {
+        max-height: 350px;
+        padding: 10px;
+        font-size: 0.85em;
+    }
+}

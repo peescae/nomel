@@ -8,7 +8,8 @@ import {
     waitForButtonClick,
     clearActionArea,
     showCombatLogModal,
-    createCoinTooltipHtml
+    createCoinTooltipHtml,
+    getGroupedCoinDisplay // 新しく追加した関数をインポート
 } from './uiManager.js';
 import { coinAttributesMap, GAME_CONSTANTS } from './data.js';
 import { playSfx } from './musicManager.js'; // playSfxをインポート
@@ -36,9 +37,8 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
             // ここに敵モン娘の情報を表示する処理を追加
             logMessage("対戦相手の情報:");
             enemies.forEach(enemy => {
-                const normalCoinsHtml = enemy.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, false)).join(' ');
-                const additionalCoinsHtml = enemy.additionalCoins.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, true)).join(' ');
-                const enemyCoinHtml = `${normalCoinsHtml} ${additionalCoinsHtml}`;
+                // 硬貨の表示をグループ化して表示
+                const enemyCoinHtml = getGroupedCoinDisplay(enemy.allCoins, coinAttributesMap);
                 logMessage(`- <span class="monster-name-color">${enemy.name}</span> ( ${enemyCoinHtml} )`);
             });
 
@@ -72,11 +72,11 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
     const enemyImagePaths = [];
 
     // 戦闘開始メッセージ
+    playSfx("戦闘開始").catch(e => console.error("効果音の再生に失敗しました:", e));
     combatLogMessages.push(`<h3>戦闘開始！</h3>`);
     enemies.forEach(enemyMonster => {
-        const normalCoinsHtml = enemyMonster.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, false)).join(' ');
-        const additionalCoinsHtml = enemyMonster.additionalCoins.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, true)).join(' ');
-        const enemyCoinHtml = `${normalCoinsHtml} ${additionalCoinsHtml}`;
+        // 硬貨の表示をグループ化して表示
+        const enemyCoinHtml = getGroupedCoinDisplay(enemyMonster.allCoins, coinAttributesMap);
         combatLogMessages.push(`<p>敵: <span class="monster-name-color">${enemyMonster.name}</span> ( ${enemyCoinHtml} )</p>`);
         // 敵モン娘の画像パスを追加
         enemyImagePaths.push(enemyMonster.name);
@@ -210,6 +210,12 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
             });
             return { monster: mOutcome.monster, power: currentEnemyPower, originalOutcomes: mOutcome.outcomes };
         }));
+
+        // 軍人の場合、味方全員の戦力値を加算
+        if (game.playerLife.name === '軍人') {
+            combatLogMessages.push(`<p>おじさんの戦闘指揮で味方全員の戦力値が上昇！</p>`);
+            partyIndividualCombatPowers.forEach(powerEntry => {powerEntry.power++;});
+        }
 
         // 神の寵愛を戦力値に加算
         applyFavourEffectsToIndividualMonsters(game, partyIndividualCombatPowers);
@@ -363,11 +369,11 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
             combatLogMessages.push("<p><strong>勝利！</strong></p>");
             wins++; // 勝利カウントを増やす
 
-            playSfx("勝利").catch(e => console.error("勝利の効果音の再生に失敗しました:", e));
+            playSfx("勝利").catch(e => console.error("効果音の再生に失敗しました:", e));
         } else {
             combatLogMessages.push("<p><strong>敗北。</strong></p>");
 
-            playSfx("敗北").catch(e => console.error("敗北の効果音の再生に失敗しました:", e));
+            playSfx("敗北").catch(e => console.error("効果音の再生に失敗しました:", e));
         }
 
         // 戦闘ログポップアップを表示し、ユーザーが閉じるのを待つ
@@ -399,7 +405,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
         if (actionArea) actionArea.innerHTML = '<button data-value="gameover-confirm">負けちゃった</button>';
         await waitForButtonClick();
 
-        playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+        playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
         // スタイルを解除
         selectedPartyMonsters.forEach(monster => {
@@ -514,7 +520,7 @@ async function selectBattleParty(game, availableMonsters, battleType) {
                     selectedParty.push(monster);
                 }
 
-                playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+                playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
                 updateUI(game, coinAttributesMap, selectedParty, game.currentArea, true, availableMonsters, GAME_CONSTANTS.MAX_PARTY_SIZE);
             }

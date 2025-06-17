@@ -131,15 +131,15 @@ export const areaTypes = [
 
 // 珍味の定義
 export const delicacies = [
+    { name: '食火鶏', explorerCoinAttributes : ['fire'], areaCoinAttributes : ['plain'], milkConversion: 1 },
     { name: '飛び魚', explorerCoinAttributes : ['sky'], areaCoinAttributes : ['water'], milkConversion: 1 },
     { name: '秋刀魚', explorerCoinAttributes : ['iron'], areaCoinAttributes : ['water'], milkConversion: 1 },
-    { name: '鷹の爪', explorerCoinAttributes : ['sky'], areaCoinAttributes : ['forest'], milkConversion: 1 },
-    { name: '花弁茸', explorerCoinAttributes : ['flower'], areaCoinAttributes : ['forest'], milkConversion: 1 },
-    { name: '川蝉', explorerCoinAttributes : ['water'], areaCoinAttributes : ['sky'], milkConversion: 1 },
     { name: '蛍烏賊', explorerCoinAttributes : ['thunder'], areaCoinAttributes : ['water'], milkConversion: 1 },
+    { name: '川蝉', explorerCoinAttributes : ['water'], areaCoinAttributes : ['sky'], milkConversion: 1 },
+    { name: '鷹の爪', explorerCoinAttributes : ['sky'], areaCoinAttributes : ['forest'], milkConversion: 1 },
     { name: '槌の子', explorerCoinAttributes : ['plain'], areaCoinAttributes : ['forest'], milkConversion: 1 },
-    { name: '食火鶏', explorerCoinAttributes : ['fire'], areaCoinAttributes : ['plain'], milkConversion: 1 },
-    { name: '木耳', explorerCoinAttributes : ['water'], areaCoinAttributes : ['forest'], milkConversion: 1 },
+    { name: '木耳', explorerCoinAttributes : ['water'], areaCoinAttributes : ['forest', 'dark'], milkConversion: 1 },
+    { name: '花弁茸', explorerCoinAttributes : ['flower'], areaCoinAttributes : ['forest', 'dark'], milkConversion: 1 },
     { name: '天狗茸', explorerCoinAttributes : ['magic'], areaCoinAttributes : ['forest', 'dark'], milkConversion: 1 },
     { name: '火炎茸', explorerCoinAttributes : ['fire'], areaCoinAttributes : ['forest', 'dark'], milkConversion: 1 },
     { name: '夜光茸', explorerCoinAttributes : ['thunder'], areaCoinAttributes : ['forest', 'dark'], milkConversion: 1 },
@@ -153,12 +153,12 @@ export const FINAL_BOSS_ENCOUNTERS = {
     mansion: [
         [{ name: 'サキュバス', count: 3 }], // 1戦目
         [{ name: 'サキュバス', count: 6 }], // 2戦目
-        [{ name: 'サキュバス', count: 9 }], // 3戦目
+        [{ name: 'サキュバス', count: 10 }], // 3戦目
     ],
     // 砦でのラスボス戦
     fortress: [
-        [{ name: 'アテルイ', count: 1 }, { name: 'キクロプス', count: 1 }, { name: 'ワーウルフ', count: 3 }, { name: 'セントール', count: 3 }], // 1戦目
-        [{ name: 'アテルイ', count: 1 }, { name: 'キクロプス', count: 1 }, { name: 'オニ', count: 3 }], // 2戦目
+        [{ name: 'アテルイ', count: 1 }, { name: 'キクロプス', count: 1 }, { name: 'ワーウルフ', count: 4 }, { name: 'セントール', count: 4 }], // 1戦目
+        [{ name: 'アテルイ', count: 1 }, { name: 'キクロプス', count: 1 }, { name: 'オニ', count: 4 }], // 2戦目
         [{ name: 'アテルイ', count: 1 }, { name: 'キクロプス', count: 1 }] // 3戦目
     ],
     // 沼でのラスボス戦
@@ -175,8 +175,8 @@ export const FINAL_BOSS_ENCOUNTERS = {
     ],
     // 闇でのラスボス戦
     darkness: [
-        [{ name: 'エキドナLv1', count: 1 }, { name: 'リザードマン', count: 4 }], // 1戦目
-        [{ name: 'エキドナLv2', count: 1 }, { name: 'ドラゴニュート', count: 2 }], // 2戦目
+        [{ name: 'エキドナLv1', count: 1 }, { name: 'リザードマン', count: 5 }], // 1戦目
+        [{ name: 'エキドナLv2', count: 1 }, { name: 'ドラゴニュート', count: 3 }], // 2戦目
         [{ name: 'エキドナLv3', count: 1 }] // 3戦目
     ],
     // 森でのラスボス戦
@@ -187,17 +187,17 @@ export const FINAL_BOSS_ENCOUNTERS = {
     ],
     // 海でのラスボス戦
     sea: [
-        [{ name: 'セドナLv1', count: 1 }, { name: 'シェリーコート', count: 4 }], // 1戦目
-        [{ name: 'セドナLv2', count: 1 }, { name: 'ルサルカ', count: 4 }], // 2戦目
-        [{ name: 'セドナLv3', count: 1 }, { name: 'サハギン', count: 4 }] // 3戦目
+        [{ name: 'セドナLv1', count: 1 }, { name: 'シェリーコート', count: 5 }], // 1戦目
+        [{ name: 'セドナLv2', count: 1 }, { name: 'ルサルカ', count: 5 }], // 2戦目
+        [{ name: 'セドナLv3', count: 1 }, { name: 'サハギン', count: 5 }] // 3戦目
     ]
 };
 
 // 人生
 export const life = [
-    { name: '農家', help: '野営時の総食料消費量に0.8を乗算する。' },
+    { name: '農家', help: '野営時の合計食料消費量に0.8を乗算する。' },
     { name: '冒険家', help: '地形の選択肢の数に2を加算する。' },
-    { name: '軍人', help: 'コイントスの回数に2を加算する。' },
+    { name: '軍人', help: 'コイントスの回数に2を加算する。味方全員の戦力値に1を加算する。' },
     { name: '炉裏魂', help: '野営時のミルクの生産量に1を加算する。硬貨の枚数が4枚以上の種族を仲間にできない。' },
 ];
 
@@ -219,6 +219,7 @@ export const GAME_CONSTANTS = {
     FOOD_SUPPLY: 3, // 探索時の食料獲得量
     FOOD_PER_COIN: 1, // 硬貨1枚あたりの基本食料獲得量
     FOOD_BONUS_MATCH: 3, // 硬貨属性一致時の追加食料獲得量
+    SPECIAL_RAID_BONUS: 4, // 特殊襲撃勝利時の獲得食料係数
     TRADE_FOOD_INITIAL_COST: 30, // 食料交換の基本数量
     TRADE_FOOD_SCALING_COST: 10, // 食料交換のスケーリング量
     RAID_TRAP_REDUCTION_FACTOR: 0.6, // 罠の硬貨による襲撃確率減少係数

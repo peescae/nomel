@@ -1,5 +1,6 @@
 {
     "コイントス": { "path": "./sound/maou_se_system48.wav", "volume": 1.0 },
+    "戦闘開始": { "path": "./sound/maou_se_onepoint05.wav", "volume": 1.0 },
     "勝利": { "path": "./sound/nomel_se_roundWin.wav", "volume": 1.0 },
     "敗北": { "path": "./sound/maou_se_system20.wav", "volume": 1.0 },
     "野営": { "path": "./sound/maou_se_system41.wav", "volume": 1.0 },

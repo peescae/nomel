@@ -61,7 +61,7 @@ export async function playCoinTossAnimation(random) {
     const originalLaunchHeight = 300;
 
     // コイントスの効果音を再生
-    playSfx("コイントス").catch(e => console.error("コイントスの効果音の再生に失敗しました:", e));
+    playSfx("コイントス").catch(e => console.error("効果音の再生に失敗しました:", e));
 
     for (let i = 0; i < numberOfCoins; i++) {
         const coinContainer = document.createElement('div');

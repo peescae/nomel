@@ -14,12 +14,11 @@ import {
     hideMonsterTooltip,
     hideAreaTooltip,
     getCoinAttributeName,
-    createButtons,
     showLifeTooltip,
     hideLifeTooltip,
     toggleCoinDisplay,
     createCoinTooltipHtml,
-    showCoinTooltip // showCoinTooltipをインポート
+    showCoinTooltip
 } from './uiManager.js';
 import { conductFight } from './battle.js';
 import { updateEstimatedFoodGain } from './food.js';
@@ -45,7 +44,6 @@ window.hideCoinTooltip = () => {
         tooltipElement.style.visibility = 'hidden';
     }
 };
-
 
 // ゲームの状態を管理するオブジェクト
 const game = {
@@ -117,7 +115,7 @@ async function offerMonstersToJoin() {
 
     // 加入の効果音を再生
     showSpeechBubble([chosenInitialMonster], '加入', random);
-    playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+    playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
     logMessage(`<span class="monster-name-color">${chosenInitialMonster.name}</span> を雇ったよ！`);
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して表示を反映
 
@@ -172,7 +170,7 @@ async function offerMonstersToJoin() {
         game.milk--;
         // 加入の効果音を再生
         showSpeechBubble([chosenMonster], '加入', random);
-        playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+        playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
         logMessage(`<span class="monster-name-color">${chosenMonster.name}</span> を雇ったよ！`);
         updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
     }
@@ -218,7 +216,19 @@ async function selectExplorationArea() {
         const button = document.createElement('button');
         button.className = 'choice-button';
         // HTML要素を直接innerHTMLに設定する
-        button.innerHTML = `${index + 1}: <span class="monster-name-color">${area.name}</span> ${area.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ')}`;
+        // 硬貨属性をカウントし、まとめた表示形式にする
+        const coinCounts = {};
+        area.coinAttributes.forEach(coinId => {
+            coinCounts[coinId] = (coinCounts[coinId] || 0) + 1;
+        });
+
+        const formattedCoinAttributes = Object.keys(coinCounts).map(coinId => {
+            const count = coinCounts[coinId];
+            const coinName = getCoinAttributeName(coinId, coinAttributesMap);
+            return count > 1 ? `${coinName}×${count}` : coinName;
+        }).join(' ');
+
+        button.innerHTML = `${index + 1}: <span class="monster-name-color">${area.name}</span> (${formattedCoinAttributes})`;
         button.dataset.value = area.id; // エリアのIDを返すように変更
         actionArea.appendChild(button);
 
@@ -229,7 +239,7 @@ async function selectExplorationArea() {
 
     const chosenId = await waitForButtonClick();
 
-    playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+    playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
     const chosenArea = areaTypes.find(area => area.id === chosenId); // IDで検索
     game.currentArea = chosenArea; // ゲームの状態に現在の地形を保存
@@ -281,7 +291,7 @@ async function sendMonstersOnExpedition(currentArea) {
                 console.log(`Clicked: ${monster.name}`);
                 console.log(`Before toggle - expeditionParty: ${expeditionParty.map(m => m.name).join(', ')}`);
 
-                playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+                playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
                 if (expeditionParty.includes(monster)) {
                     // 派遣中から待機中に戻す
@@ -317,7 +327,7 @@ async function sendMonstersOnExpedition(currentArea) {
                 // 派遣されたモン娘を保持する
                 game.expeditionParty = expeditionParty;
 
-                playSfx("移動").catch(e => console.error("移動の効果音の再生に失敗しました:", e));
+                playSfx("移動").catch(e => console.error("効果音の再生に失敗しました:", e));
 
                 clearActionArea(); // ボタンをクリア
                 game.currentPhase = 'idle'; // フェーズをアイドルに戻す
@@ -425,7 +435,7 @@ async function handleRaid(restingParty, currentArea) {
         logMessage("キャンプに誰もいないよ！");
 
         if (raidType === 'duel') {
-            playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+            playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
 
             logMessage("おじさんのミルクが搾り取られちゃった。");
             game.milk--;;
@@ -434,7 +444,7 @@ async function handleRaid(restingParty, currentArea) {
             if (actionArea) actionArea.innerHTML = '<button data-value="continue">次へ</button>';
             await waitForButtonClick();
 
-            playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+            playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
             // スタイルを解除
             game.party.forEach(monster => {
@@ -445,8 +455,7 @@ async function handleRaid(restingParty, currentArea) {
             });
         }
         else {
-            playSfx("逃走").catch(e => console.error("逃走の効果音の再生に失敗しました:", e));
-
+            playSfx("逃走").catch(e => console.error("効果音の再生に失敗しました:", e));
             logMessage("なんとか逃げ切れたけど、全ての食料を置いてきちゃった。");
             game.food = 0;
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
@@ -454,7 +463,7 @@ async function handleRaid(restingParty, currentArea) {
             if (actionArea) actionArea.innerHTML = '<button data-value="continue">次へ</button>';
             await waitForButtonClick();
 
-            playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+            playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
             // スタイルを解除
             game.party.forEach(monster => {
@@ -482,6 +491,7 @@ async function handleRaid(restingParty, currentArea) {
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
         }
         else {
+            playSfx("逃走").catch(e => console.error("効果音の再生に失敗しました:", e));
             logMessage("なんとか逃げ切れたけど、全ての食料を置いてきちゃった。");
             game.food = 0;
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
@@ -490,7 +500,7 @@ async function handleRaid(restingParty, currentArea) {
         actionArea.innerHTML = '<button data-value="gameover-confirm">あらら</button>';
         await waitForButtonClick();
 
-        playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+        playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
         // スタイルを解除
         game.party.forEach(monster => {
@@ -509,7 +519,7 @@ async function handleRaid(restingParty, currentArea) {
 
         if (raidType === 'special') {
             // 特殊襲撃勝利時の報酬
-            const foodRewards = enemies.reduce((sum, monster) => sum + monster.upkeep, 0) * 3;
+            const foodRewards = enemies.reduce((sum, monster) => sum + monster.upkeep, 0) * GAME_CONSTANTS.SPECIAL_RAID_BONUS;
             game.food += foodRewards;
             logMessage(`食料を${foodRewards}獲得したよ！`);
             updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
@@ -542,19 +552,19 @@ async function handleRaid(restingParty, currentArea) {
             while (true) {
                 const choice = await waitForButtonClick();
                 if (choice === 'skip') {
-                    playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+                    playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
                     logMessage("敵を勧誘せずに先に進むよ。");
                     break;
                 } else {
                     const chosenEnemy = recruitableEnemies.find(m => m.name === choice);
                     if (game.playerLife.name === '炉裏魂' && chosenEnemy.coinAttributes.length > game.coinSizeLimit) {
                         // NGの効果音を再生
-                        playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+                        playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
                         displayGuideMessage('炉裏魂ゆえに');
                     }
                     else if (raidType === 'duel') {
                         // 加入の効果音を再生
-                        playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+                        playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
                         logMessage(`<span class="monster-name-color">${chosenEnemy.name}</span> が仲間に加わったよ！`);
                         showSpeechBubble([chosenEnemy], '加入', random);
                         // 戦闘勝利後はMAX_PARTY_SIZEの制限なく加入可能
@@ -564,7 +574,7 @@ async function handleRaid(restingParty, currentArea) {
                     }
                     else if (game.milk > 0) {
                         // 加入の効果音を再生
-                        playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+                        playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
                         game.milk--; // ミルクを1消費
                         logMessage(`おじさんのミルクで <span class="monster-name-color">${chosenEnemy.name}</span> が仲間に加わったよ！`);
                         showSpeechBubble([chosenEnemy], '加入', random);
@@ -574,7 +584,7 @@ async function handleRaid(restingParty, currentArea) {
                         break;
                     } else {
                         // NGの効果音を再生
-                        playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+                        playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
                         displayGuideMessage('ミルク不足');
                     }
                 }
@@ -689,7 +699,8 @@ async function startFinalBossBattle() {
         chosenAreas.push(mansionArea); // 館を固定で追加
     }
     // 残りの2つをランダムに選択（重複なし）
-    while (chosenAreas.length < 3 && otherEligibleAreas.length > 0) {
+    const areaCount = game.playerLife.name === '冒険家' ? 3 : 5;
+    while (chosenAreas.length < areaCount && otherEligibleAreas.length > 0) {
         const randomIndex = Math.floor(random() * otherEligibleAreas.length);
         const selectedArea = otherEligibleAreas.splice(randomIndex, 1)[0];
         chosenAreas.push(selectedArea);
@@ -701,8 +712,20 @@ async function startFinalBossBattle() {
     chosenAreas.forEach((area, index) => {
         const button = document.createElement('button');
         button.className = 'choice-button';
-        // HTML要素を直接innerHTMLに設定する
-        button.innerHTML = `${index + 1}: <span class="monster-name-color">${area.name}</span> ${area.coinAttributes.map(attrId => getCoinAttributeName(attrId, coinAttributesMap)).join(' ')}`;
+        
+        // 硬貨属性をカウントし、まとめた表示形式にする
+        const coinCounts = {};
+        area.coinAttributes.forEach(coinId => {
+            coinCounts[coinId] = (coinCounts[coinId] || 0) + 1;
+        });
+
+        const formattedCoinAttributes = Object.keys(coinCounts).map(coinId => {
+            const count = coinCounts[coinId];
+            const coinName = getCoinAttributeName(coinId, coinAttributesMap);
+            return count > 1 ? `${coinName}×${count}` : coinName;
+        }).join(' ');
+
+        button.innerHTML = `${index + 1}: <span class="monster-name-color">${area.name}</span> (${formattedCoinAttributes})`;
         button.dataset.value = area.id; // エリアのIDを返すように変更
         actionArea.appendChild(button);
 
@@ -714,7 +737,7 @@ async function startFinalBossBattle() {
     const chosenAreaId = await waitForButtonClick();
     const finalBossArea = areaTypes.find(area => area.id === chosenAreaId);
 
-    playSfx("移動").catch(e => console.error("移動の効果音の再生に失敗しました:", e));
+    playSfx("移動").catch(e => console.error("効果音の再生に失敗しました:", e));
 
     logMessage(`敵は${finalBossArea.name}にあり！`);
     game.currentArea = finalBossArea; // 現在の地形を設定
@@ -841,13 +864,13 @@ async function handleRecruitmentEvent(currentArea) {
     while (true) {
         const choice = await waitForButtonClick();
         if (choice === 'skip') {
-            playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+            playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
             logMessage("敵を勧誘せずに先に進むよ。");
             break;
         }
         else {
             if (game.milk >= 1) {
-                playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+                playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
 
                 game.milk--;
                 game.party.push(monsterToOffer);
@@ -856,7 +879,7 @@ async function handleRecruitmentEvent(currentArea) {
                 updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
                 break;
             } else {
-                playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+                playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
                 displayGuideMessage('ミルク不足');
             }
         }
@@ -894,7 +917,7 @@ async function handleSisterEvent(partyList, random) {
     logMessage(`${selectedMonster.name}の生き別れた血の繋がっていない妹が現れた！`);
     logMessage(`${sisterMonster.name}が仲間になった！`);
 
-    playSfx("加入").catch(e => console.error("加入の効果音の再生に失敗しました:", e));
+    playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
     showSpeechBubble(game.party, '加入', random);
     displayGuideMessage('妹');
 
@@ -923,7 +946,7 @@ async function handleFavourEvent() {
     logMessage(`神様から ${coinHtml} の硬貨を授かったよ！`);
 
     // 寵愛の効果音を再生
-    playSfx("寵愛").catch(e => console.error("寵愛の効果音の再生に失敗しました:", e));
+    playSfx("寵愛").catch(e => console.error("効果音の再生に失敗しました:", e));
 
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して表示を反映
 
@@ -957,7 +980,7 @@ async function handleFoodSacrificeEvent() {
         clearActionArea();
 
         if (initialChoice === 'skipEvent') {
-            playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+            playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
             logMessage("今夜はやめておくよ。");
             return;
         }
@@ -965,12 +988,12 @@ async function handleFoodSacrificeEvent() {
         if (initialChoice === 'sacrifice') {
             if (game.food < foodCost) {
                 // NGの効果音を再生
-                playSfx("NG").catch(e => console.error("NGの効果音の再生に失敗しました:", e));
+                playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
                 displayGuideMessage('食料不足');
                 break;
             }
 
-            playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+            playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
             const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy');
             const chosenCoins = [];
@@ -1007,7 +1030,7 @@ async function handleFoodSacrificeEvent() {
             const acquiredCoinHtml = createCoinTooltipHtml(acquiredCoin.id, coinAttributesMap);
             logMessage(`食料 ${foodCost} を捧げて、${acquiredCoinHtml} の硬貨を授かったよ！`);
             // 寵愛の効果音を再生
-            playSfx("寵愛").catch(e => console.error("寵愛の効果音の再生に失敗しました:", e));
+            playSfx("寵愛").catch(e => console.error("効果音の再生に失敗しました:", e));
 
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
         }
@@ -1053,13 +1076,13 @@ async function handleMilkPartyEvent() {
                     logMessage(`<span class="monster-name-color">${monster.name}</span> は ${coinHtml} の硬貨を獲得！`);
                 }
             });
-            playSfx("寵愛").catch(e => console.error("寵愛の効果音の再生に失敗しました:", e));
+            playSfx("寵愛").catch(e => console.error("効果音の再生に失敗しました:", e));
             showSpeechBubble(game.party, '食後', random);
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
         } else {
             logMessage(`残念ながらミルクパーティは延期となりました。`);
             showSpeechBubble(game.party, '延期', random);
-            playSfx("選択").catch(e => console.error("選択の効果音の再生に失敗しました:", e));
+            playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
         }
     }
@@ -1075,7 +1098,7 @@ async function handleMilkPartyEvent() {
 async function conductCamp(expeditionParty, currentArea) {
     game.currentPhase = 'campPhase';
     logMessage(`<br><div id="game-messages-phase">--- 野営フェーズ ---</div>`);
-    playSfx("野営").catch(e => console.error("野営の効果音の再生に失敗しました:", e));
+    playSfx("野営").catch(e => console.error("効果音の再生に失敗しました:", e));
     displayGuideMessage('野営');
 
     let foodGained = 0;
@@ -1228,7 +1251,7 @@ function endGame(isCleared) {
         displayGuideMessage('ハッピーエンド');
 
         // ハッピーエンドの効果音を再生
-        playSfx("ハッピーエンド").catch(e => console.error("ハッピーエンドの効果音の再生に失敗しました:", e));
+        playSfx("ハッピーエンド").catch(e => console.error("効果音の再生に失敗しました:", e));
 
         logMessage("おじさんはモン娘達に食べられてしまいました。");
     }
@@ -1332,14 +1355,14 @@ async function gameLoop() {
         // 20日目の開始時にラスボス戦を開始
         if (game.days === GAME_CONSTANTS.MAX_DAYS) { // 20日目になったらすぐにラスボス戦
             // 警告の効果音を再生
-            playSfx("警告").catch(e => console.error("警告の効果音の再生に失敗しました:", e));
+            playSfx("警告").catch(e => console.error("効果音の再生に失敗しました:", e));
 
             await startFinalBossBattle();
             return; // ラスボス戦終了後はゲームループを抜ける
 
         } else if (game.days === GAME_CONSTANTS.BOSS_DAYS) {
             // 警告の効果音を再生
-            playSfx("警告").catch(e => console.error("警告の効果音の再生に失敗しました:", e));
+            playSfx("警告").catch(e => console.error("効果音の再生に失敗しました:", e));
 
             logMessage("\n--- 関所の番人、現る！ ---");
             game.currentPhase = 'areaSelection'; // 地形選択フェーズ
@@ -1360,7 +1383,7 @@ async function gameLoop() {
             // 通常のゲームフロー
 
             // 夜明けの効果音を再生
-            playSfx("夜明け").catch(e => console.error("夜明けの効果音の再生に失敗しました:", e));
+            playSfx("夜明け").catch(e => console.error("効果音の再生に失敗しました:", e));
 
             // モン娘に「起床」の台詞を喋らせる
             showSpeechBubble(game.party, '起床', random);
@@ -1385,6 +1408,8 @@ async function gameLoop() {
                 actionArea.innerHTML = '<button id="conduct-camp-button" data-value="conduct-camp">次へ</button>';
             }
             await waitForButtonClick(); // ボタンがクリックされるまで待機
+
+            showSpeechBubble(restingParty, '雑談', random);
 
             // イベント発生
             await event(game.party, currentArea); // partyListをgame.partyに変更

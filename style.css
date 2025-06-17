@@ -271,7 +271,7 @@ button:active {
 
 /* Monster list container */
 #party-list-container {
-    max-height: 800px;
+    max-height: 760px;
     overflow-y: auto;
     padding-top: 4px;
 }

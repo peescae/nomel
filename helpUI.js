@@ -1,7 +1,6 @@
 // helpUI.js
 
-// imagePaths.jsonをimportする代わりに、fetchで動的に読み込むように変更します。
-// import imagePaths from './imagePaths.json'; 
+import { playSfx } from './musicManager.js';
 
 /**
  * ホムンクルス画像とヘルプウィンドウの表示を管理するモジュール。
@@ -75,12 +74,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ホムンクルス画像をダブルクリックでヘルプウィンドウを表示します。
         homunculusImage.addEventListener('dblclick', () => { // 'click' を 'dblclick' に変更
             console.log("ホムンクルス画像がダブルクリックされました。"); // デバッグ用ログ
+            playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
             helpOverlay.style.display = 'flex'; // オーバーレイを表示
         });
 
         // 閉じるボタンクリックでヘルプウィンドウを非表示にします。
         helpModalCloseButton.addEventListener('click', () => {
             console.log("ヘルプモーダルの閉じるボタンがクリックされました。"); // デバッグ用ログ
+            playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
             helpOverlay.style.display = 'none'; // オーバーレイを非表示
         });
 
@@ -98,9 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ホムンクルスの初期位置を設定
         const setHomunculusInitialPosition = () => {
             const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
             const containerWidth = homunculusContainer.offsetWidth;
-            const containerHeight = homunculusContainer.offsetHeight;
 
             // 初期位置を画面右上に設定（マージンを考慮）
             let initialTop = 25;
