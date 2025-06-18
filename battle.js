@@ -39,7 +39,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
             enemies.forEach(enemy => {
                 // 硬貨の表示をグループ化して表示
                 const enemyCoinHtml = getGroupedCoinDisplay(enemy.allCoins, coinAttributesMap);
-                logMessage(`- <span class="monster-name-color">${enemy.name}</span> ( ${enemyCoinHtml} )`);
+                logMessage(`- <span class="monster-name-color">${enemy.name}</span>  (${enemy.totalCoins})  ${enemyCoinHtml}`);
             });
 
             selectedPartyMonsters = await selectBattleParty(game, availableMonstersBoss, battleType);
@@ -77,7 +77,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
     enemies.forEach(enemyMonster => {
         // 硬貨の表示をグループ化して表示
         const enemyCoinHtml = getGroupedCoinDisplay(enemyMonster.allCoins, coinAttributesMap);
-        combatLogMessages.push(`<p>敵: <span class="monster-name-color">${enemyMonster.name}</span> ( ${enemyCoinHtml} )</p>`);
+        combatLogMessages.push(`<p>敵: <span class="monster-name-color">${enemyMonster.name}</span>  (${enemyMonster.totalCoins})  ${enemyCoinHtml}</p>`);
         // 敵モン娘の画像パスを追加
         enemyImagePaths.push(enemyMonster.name);
     });

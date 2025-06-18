@@ -431,7 +431,7 @@ async function handleRaid(restingParty, currentArea) {
         const normalCoinsHtml = enemy.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, false)).join(' ');
         const additionalCoinsHtml = enemy.additionalCoins.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, true)).join(' ');
         const enemyCoinHtml = `${normalCoinsHtml} ${additionalCoinsHtml}`;
-        logMessage(` - <span class="monster-name-color">${enemy.name}</span> ( ${enemyCoinHtml} )`);
+        logMessage(` - <span class="monster-name-color">${enemy.name}</span>  (${enemy.totalCoins})  ${enemyCoinHtml}`);
     });
 
     if (restingParty.length === 0) {
@@ -703,7 +703,7 @@ async function startFinalBossBattle() {
         chosenAreas.push(mansionArea); // 館を固定で追加
     }
     // 残りの2つをランダムに選択（重複なし）
-    const areaCount = game.playerLife.name === '冒険家' ? 5 : 3;
+    const areaCount = game.playerLife.name === '冒険家' ? GAME_CONSTANTS.SELECT_AREA_ADVENTURER : GAME_CONSTANTS.SELECT_AREA_SIZE;
     while (chosenAreas.length < areaCount && otherEligibleAreas.length > 0) {
         const randomIndex = Math.floor(random() * otherEligibleAreas.length);
         const selectedArea = otherEligibleAreas.splice(randomIndex, 1)[0];
@@ -766,7 +766,18 @@ async function startFinalBossBattle() {
                 const chosenTalker = template.talker && template.talker.length > 0
                     ? template.talker[Math.floor(random() * template.talker.length)]
                     : 'none';
-                finalBossEnemies.push(new Monster(template.name, [...template.coins], template.upkeep, false, chosenTalker));
+                let enemy = new Monster(template.name, [...template.coins], template.upkeep, false, chosenTalker);
+                // 追加の硬貨を付与
+                const maxAdditionalCoins = Math.floor((game.days - GAME_CONSTANTS.BOSS_DAYS) / 2);
+                const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+                for (let j = 0; j < numAdditionalCoins; j++) {
+                    if (enemy.coinAttributes.length > 0) {
+                        const randomCoin = enemy.coinAttributes[Math.floor(random() * enemy.coinAttributes.length)];
+                        enemy.additionalCoins.push(randomCoin);
+                    }
+                }
+                // 敵リストに追加
+                finalBossEnemies.push(enemy);
             }
         }
 
@@ -1049,7 +1060,7 @@ async function handleFoodSacrificeEvent() {
  * @returns {Promise<void>}
  */
 async function handleMilkPartyEvent() {
-    if (game.milk >= game.party.length && game.party.length > 0) {
+    if (game.milk >= game.party.length && game.party.length > 0 && game.food >= 0) {
         logMessage(`<br><div id="game-messages-phase">--- ミルクパーティ ---</div>`);
         displayGuideMessage('ミルクパーティ');
 

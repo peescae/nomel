@@ -13,11 +13,11 @@ export const coinAttributesMap = [
     { id: 'dark', name: '闇', color: 'rgb(29, 9, 73)', help: '特殊効果なし。' },
     { id: 'sky', name: '空', color: 'rgb(88, 237, 248)', help: '特殊効果なし。' },
     { id: 'magic', name: '魔', color: 'rgb(132, 0, 255)', help: '味方全体の魔の総数が敵全体の魔の総数を超える場合、必ず表になる。' },
-    { id: 'flower', name: '花', color: 'rgb(233, 112, 202)', help: '味方全体の戦闘手当に0.75を乗算する。' },
+    { id: 'flower', name: '花', color: 'rgb(233, 112, 202)', help: '味方全体の戦闘手当に0.8を乗算する。' },
     { id: 'fishing', name: '漁', color: 'rgb(0, 85, 134)', help: '表の場合、水の硬貨を持つ全ての敵の戦力値に1を減算する。半減まで可能。探索時、この硬貨を水の硬貨として扱う。' },
     { id: 'water', name: '水', color: 'rgb(0, 162, 255)', help: '特殊効果なし。' },
     { id: 'snow', name: '雪', color: 'rgb(173, 216, 230)', help: '特殊効果なし。' },
-    { id: 'trap', name: '罠', color: 'rgb(129, 86, 55)', help: '待機時、全ての敵の戦力値に1を減算する。' },
+    { id: 'trap', name: '罠', color: 'rgb(129, 86, 55)', help: '待機時、全ての敵の戦力値に1を減算する。半減まで可能。' },
     { id: 'bow', name: '弓', color: 'rgb(102, 96, 96)', help: '表の場合、空の硬貨を持つ全ての敵の戦力値に1を減算する。半減まで可能。' },
     { id: 'iron', name: '鉄', color: 'rgb(150, 150, 150)', help: '表の場合、この硬貨が産出する戦力値に2を乗算する。' },
     { id: 'scale', name: '鱗', color: 'rgb(123, 155, 92)', help: '裏の場合、一度だけ硬貨を振り直す。' },
@@ -75,8 +75,8 @@ export const monsterTemplates = [
     { name: 'エキドナLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark'], upkeep: 12, talker: ['none'] },
     { name: 'エキドナLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'poison', 'poison', 'poison', 'poison', 'dark', 'dark', 'dark', 'dark'], upkeep: 14, talker: ['none'] },
     { name: 'ニドヘグLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark'], upkeep: 20, talker: ['none'] },
-    { name: 'ニドヘグLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark', 'dark'], upkeep: 24, talker: ['none'] },
-    { name: 'ニドヘグLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark', 'dark', 'dark'], upkeep: 28, talker: ['none'] },
+    { name: 'ニドヘグLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark', 'dark'], upkeep: 28, talker: ['none'] },
+    { name: 'ニドヘグLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'scale', 'forest', 'forest', 'forest', 'forest', 'forest', 'dark', 'dark', 'dark', 'dark', 'dark'], upkeep: 36, talker: ['none'] },
     { name: 'セドナLv1', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'snow', 'snow'], upkeep: 10, talker: ['none'] },
     { name: 'セドナLv2', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'water', 'snow', 'snow', 'snow'], upkeep: 12, talker: ['none'] },
     { name: 'セドナLv3', coins: ['enemy', 'scale', 'scale', 'scale', 'scale', 'scale', 'water', 'water', 'water', 'water', 'snow', 'snow', 'snow', 'snow'], upkeep: 14, talker: ['none'] },
@@ -175,7 +175,7 @@ export const FINAL_BOSS_ENCOUNTERS = {
     ],
     // 闇でのラスボス戦
     darkness: [
-        [{ name: 'エキドナLv1', count: 1 }, { name: 'リザードマン', count: 5 }], // 1戦目
+        [{ name: 'エキドナLv1', count: 1 }, { name: 'リザードマン', count: 6 }], // 1戦目
         [{ name: 'エキドナLv2', count: 1 }, { name: 'ドラゴニュート', count: 3 }], // 2戦目
         [{ name: 'エキドナLv3', count: 1 }] // 3戦目
     ],
@@ -222,7 +222,6 @@ export const GAME_CONSTANTS = {
     SPECIAL_RAID_BONUS: 4, // 特殊襲撃勝利時の獲得食料係数
     TRADE_FOOD_INITIAL_COST: 30, // 食料交換の基本数量
     TRADE_FOOD_SCALING_COST: 10, // 食料交換のスケーリング量
-    RAID_TRAP_REDUCTION_FACTOR: 0.6, // 罠の硬貨による襲撃確率減少係数
     RAID_FLOWER_REDUCTION_FACTOR: 0.8, // 花の硬貨による戦闘手当減少係数
     ENEMY_COIN_SCALING_DAYS: 4, // 敵の硬貨枚数スケーリングの日間隔
     ENEMY_COUNT_SCALING_DAYS: 2, // 敵の出現数スケーリングの日間隔
