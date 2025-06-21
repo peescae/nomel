@@ -1,7 +1,7 @@
 // delicacyHelpUI.js
 
 import { delicacies, coinAttributesMap } from './data.js';
-import { playSfx } from './musicManager.js'; // 効果音のためにmusicManagerをインポート
+import { playSfx } from './musicManager.js';
 
 /**
  * 珍味ヘルプウィンドウの表示を管理するモジュール。

@@ -19,14 +19,14 @@ import {
     toggleCoinDisplay,
     createCoinTooltipHtml,
     showCoinTooltip,
-    setImagePaths // uiManagerからsetImagePathsをインポート
-} from './uiManager.js'; // uiManager.jsからsetImagePathsをインポートするように変更
+    setImagePaths
+} from './uiManager.js';
 import { conductFight } from './battle.js';
 import { updateEstimatedFoodGain } from './food.js';
-import { initMusicPlayer, playMusic, playSfx, stopMusic, setAudioBuffers as setMusicAudioBuffers } from './musicManager.js'; // musicManagerからsetAudioBuffersをインポートするように変更
+import { initMusicPlayer, playMusic, playSfx, stopMusic, setAudioBuffers as setMusicAudioBuffers } from './musicManager.js';
 import { displayGuideMessage } from './helpUI.js';
 import { showSpeechBubble } from './speechBubbleManager.js';
-import { preloadAllAssets } from './preloadManager.js'; // preloadManagerをインポート
+import { preloadAllAssets } from './preloadManager.js';
 
 // coinAttributesMapをグローバルスコープで利用可能にする
 // HTMLのonmouseover属性などから直接呼び出すため
@@ -382,9 +382,9 @@ async function handleRaid(restingParty, currentArea) {
         }
     }
 
-    // 1日目かつ決闘の場合、通常襲撃に変更する。
-    if (game.days === 1 && raidType === 'duel') {
-        raidType = 'normal';
+    // 1日目の場合、特殊襲撃にする。
+    if (game.days === 1) {
+        raidType = 'special';
     }
 
     let enemies = [];
@@ -604,6 +604,108 @@ async function handleRaid(restingParty, currentArea) {
     }
 
     return true; // 食料ゼロでゲームオーバーは後続のフェーズで判定
+}
+
+/**
+ * 帝国の侵略兵器の襲撃イベントを処理する。
+ * 仲間の人数に応じて発生確率が変動し、特定の敵「機」の硬貨を持つモン娘が襲撃してくる。
+ * ボス戦と同様に戦う仲間を選び、選択された仲間は次の戦闘に参加できないようにする。
+ * @param {Monster[]} restingParty - キャンプで待機中のモン娘の配列。
+ * @param {object} currentArea - 現在の地形情報。
+ * @returns {Promise<boolean>} 襲撃を撃退できた場合true、敗北した場合false。
+ */
+async function handleImperialInvasionRaid(restingParty, currentArea) {
+    game.currentPhase = 'imperialRaidPhase';
+    logMessage(`<br/><div id="game-messages-phase">--- 帝国の侵略兵器の襲撃 ---</div>`);
+    displayGuideMessage('帝国の侵略兵器');
+
+    const partyList = document.getElementById('party-list');
+
+    let battleResult; 
+    if (restingParty.length > 0) {
+        showSpeechBubble(restingParty, '帝国', random);
+
+        // 襲撃フェーズ開始時に待機中のモン娘に特別なスタイルを適用
+        restingParty.forEach(monster => {
+            const li = partyList ? partyList.querySelector(`li[data-index="${game.party.indexOf(monster)}"]`) : null;
+            if (li) {
+                li.classList.add('resting-in-raid');
+            }
+        });
+
+        let enemies = [];
+        // 敵は「機」の硬貨を持つモン娘の中からランダムに抽選
+        const imperialWeaponTemplates = monsterTemplates.filter(t => t.coins.includes('machine') && t.coins.includes('enemy'));
+
+        // 敵の数は、通常の襲撃と同様に、日数に応じて加算
+        const numEnemies = 1 + Math.floor((game.days - 1) / GAME_CONSTANTS.ENEMY_COUNT_SCALING_DAYS);
+
+        for (let i = 0; i < numEnemies; i++) {
+            const randomIndex = Math.floor(random() * imperialWeaponTemplates.length);
+            const selectedTemplate = imperialWeaponTemplates[randomIndex];
+            const chosenTalker = selectedTemplate.talker && selectedTemplate.talker.length > 0
+                ? selectedTemplate.talker[Math.floor(random() * selectedTemplate.talker.length)]
+                : 'none';
+            const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
+
+            // 追加硬貨を付与（少な目）
+            if (game.days > GAME_CONSTANTS.BOSS_DAYS) {
+                const maxAdditionalCoins = Math.floor((game.days - GAME_CONSTANTS.BOSS_DAYS) / 3);
+                const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+
+                for (let j = 0; j < numAdditionalCoins; j++) {
+                    if (newEnemy.coinAttributes.length > 0) {
+                        const randomCoin = newEnemy.coinAttributes[Math.floor(random() * newEnemy.coinAttributes.length)];
+                        newEnemy.additionalCoins.push(randomCoin);
+                    }
+                }
+            }
+            enemies.push(newEnemy);
+        }
+
+        // ボス戦と同様に戦わせる仲間を選んでください。ここで選択した仲間は、ボス戦と同様に、次の戦闘に参加させられません。
+        battleResult = await conductFight(game, game.party, enemies, random, currentArea, 'boss'); // 'boss'タイプで仲間選択を強制
+    }
+    else {
+        logMessage("戦えるモン娘が残っていないよ！");
+        battleResult = { won: false, foodGain: 0, milkGain: 0 }; 
+    }
+
+    if (!battleResult.won) {
+        displayGuideMessage('襲撃敗北');
+        playSfx("逃走").catch(e => console.error("効果音の再生に失敗しました:", e));
+        logMessage("なんとか逃げ切れたけど、全ての食料を置いてきちゃった。");
+        game.food = 0;
+        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+        clearActionArea();
+        const actionArea = document.getElementById('action-area');
+        if (actionArea) actionArea.innerHTML = '<button data-value="gameover-confirm">あらら</button>';
+        await waitForButtonClick();
+
+        playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
+
+        // スタイルを解除
+        game.party.forEach(monster => {
+            const li = partyList ? partyList.querySelector(`li[data-index="${game.party.indexOf(monster)}"]`) : null;
+            if (li) {
+                li.classList.remove('resting-in-raid');
+            }
+        });
+        return false; // ゲームオーバーの可能性あり
+    } else {
+        displayGuideMessage('襲撃勝利');
+        updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+
+        clearActionArea();
+        // スタイルを解除
+        game.party.forEach(monster => {
+            const li = partyList ? partyList.querySelector(`li[data-index="${game.party.indexOf(monster)}"]`) : null;
+            if (li) {
+                li.classList.remove('resting-in-raid');
+            }
+        });
+        return true; // 襲撃撃退成功
+    }
 }
 
 
@@ -951,7 +1053,7 @@ async function handleFavourEvent() {
     clearActionArea();
 
     // enemy属性を除く全ての硬貨をフィルタリング
-    const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy');
+    const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy' && coin.id !== 'machine');
 
     // ランダムに1つ選択
     const chosenCoin = availableCoins[Math.floor(random() * availableCoins.length)];
@@ -1010,7 +1112,7 @@ async function handleFoodSacrificeEvent() {
 
             playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
-            const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy');
+            const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy' && coin.id !== 'machine');
             const chosenCoins = [];
             while (chosenCoins.length < 3) {
                 const randomIndex = Math.floor(random() * availableCoins.length);
@@ -1206,7 +1308,6 @@ async function conductCamp(expeditionParty, currentArea) {
             game.milk -= milkCost;
             game.food = 0; // 食料を最低値に回復
             logMessage(`食料が尽きたけど、仲間モン娘 ${milkCost} 人にミルクを支払って冒険を続行だ！`);
-            logMessage(`現在のミルク: ${game.milk}, 現在の食料: ${game.food}`);
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
             const actionArea = document.getElementById('action-area');
             if (actionArea) actionArea.innerHTML = '<button data-value="continue-after-milk">続行</button>';
@@ -1422,12 +1523,40 @@ async function gameLoop() {
             if (actionArea) {
                 actionArea.innerHTML = '<button id="conduct-camp-button" data-value="conduct-camp">次へ</button>';
             }
-            await waitForButtonClick(); // ボタンがクリックされるまで待機
+            await waitForButtonClick();
 
             showSpeechBubble(restingParty, '雑談', random);
 
             // イベント発生
             await event(game.party, currentArea); // partyListをgame.partyに変更
+        }
+
+        // 帝国の侵略兵器の襲撃イベント判定
+        if (game.days !== GAME_CONSTANTS.BOSS_DAYS && game.days !== GAME_CONSTANTS.MAX_DAYS && game.party.length > GAME_CONSTANTS.RAID_EMPIRE_MIN_PARTY_SIZE) {
+            const baseChance = Math.floor(game.party.length / GAME_CONSTANTS.RAID_EMPIRE_CHANCE);
+            const numChecks = Math.floor(game.party.length / GAME_CONSTANTS.RAID_EMPIRE_COUNT);
+            let imperialRaidOccurred = false;
+
+            // 全てのパーティメンバーのhasBeenSentToBattleフラグをリセット
+            expeditionParty.forEach(monster => monster.hasBeenSentToBattle = true);
+            restingParty.forEach(monster => monster.hasBeenSentToBattle = false);
+
+            for (let i = 0; i < numChecks; i++) {
+                if (random() < (baseChance / 100)) { // 確率計算
+                    if (!imperialRaidOccurred) playMusic('帝国');
+
+                    imperialRaidOccurred = true;
+
+                    const imperialRaidSuccess = await handleImperialInvasionRaid(game.party.filter(m => !m.hasBeenSentToBattle), currentArea);
+
+                    if (!imperialRaidSuccess) break;
+                }
+            }
+            // 襲撃発生後、hasBeenSentToBattleフラグをリセット
+            if (imperialRaidOccurred) {
+                game.days < GAME_CONSTANTS.BOSS_DAYS ? playMusic('レベル1') : playMusic('レベル2');
+                game.party.forEach(monster => monster.hasBeenSentToBattle = false);
+            }
         }
 
         // 野営フェーズに入る前にワンクッション置く
@@ -1441,10 +1570,6 @@ async function gameLoop() {
         let campResult = await conductCamp(expeditionParty, currentArea);
         if (!campResult) { // campResultがfalseの場合（ゲームオーバー）
             break;
-        }
-
-        if (campResult === 'recovered') {
-            logMessage("おじさんのミルクパワーで冒険を続行するよ！");
         }
 
         updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // 1日の終了後、UIを通常状態に戻すためにもう一度呼び出し
@@ -1629,7 +1754,7 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
             }
 
             // enemy属性を除く全ての硬貨をフィルタリング
-            const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy');
+            const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy' && coin.id !== 'machine');
             // ランダムに1つ神の寵愛を取得
             const chosenCoin = availableCoins[Math.floor(random() * availableCoins.length)];
             game.favour.push(chosenCoin.id); // game.favour に硬貨のIDを追加

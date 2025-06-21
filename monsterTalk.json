@@ -8,6 +8,7 @@
     , "a6": { "talker": "真面目", "category": "加入", "text": "よろしくお願いします。"}
     , "a7": { "talker": "真面目", "category": "空腹", "text": "お腹が空きました。"}
     , "a8": { "talker": "真面目", "category": "延期", "text": "そうですか……。"}
+    , "a9": { "talker": "真面目", "category": "帝国", "text": "すぐに掃除します。"}
     , "a101": { "talker": "真面目", "category": "雑談", "text": "なんですか？"}
     , "a102": { "talker": "真面目", "category": "雑談", "text": "食料足りてます？"}
     , "a103": { "talker": "真面目", "category": "雑談", "text": "気を付けてくださいね。"}
@@ -19,6 +20,7 @@
     , "b6": { "talker": "元気", "category": "加入", "text": "よろしくね！"}
     , "b7": { "talker": "元気", "category": "空腹", "text": "おなかすいた！"}
     , "b8": { "talker": "元気", "category": "延期", "text": "そんなー！"}
+    , "b9": { "talker": "元気", "category": "帝国", "text": "おゆはんの邪魔をすな！"}
     , "b101": { "talker": "元気", "category": "雑談", "text": "どしたのー！？"}
     , "b102": { "talker": "元気", "category": "雑談", "text": "王子様どこだろね！？"}
     , "b103": { "talker": "元気", "category": "雑談", "text": "いつかウチの村においでよ！"}
@@ -30,6 +32,7 @@
     , "c6": { "talker": "真面目元気", "category": "加入", "text": "よろしくお願いしまーす！"}
     , "c7": { "talker": "真面目元気", "category": "空腹", "text": "お腹が空きましたよ！"}
     , "c8": { "talker": "真面目元気", "category": "延期", "text": "おあずけ！？"}
+    , "c9": { "talker": "真面目元気", "category": "帝国", "text": "直ちにぶっ壊します！"}
     , "c101": { "talker": "真面目元気", "category": "雑談", "text": "どうしました！？"}
     , "c102": { "talker": "真面目元気", "category": "雑談", "text": "何かお困りでしょうか！？"}
     , "c103": { "talker": "真面目元気", "category": "雑談", "text": "警戒中！"}
@@ -41,6 +44,7 @@
     , "d6": { "talker": "ゆるい", "category": "加入", "text": "よろ。"}
     , "d7": { "talker": "ゆるい", "category": "空腹", "text": "めしをくれ。"}
     , "d8": { "talker": "ゆるい", "category": "延期", "text": "けち。"}
+    , "d9": { "talker": "ゆるい", "category": "帝国", "text": "うっざ。"}
     , "d101": { "talker": "ゆるい", "category": "雑談", "text": "なーに？"}
     , "d102": { "talker": "ゆるい", "category": "雑談", "text": "んー？"}
     , "d103": { "talker": "ゆるい", "category": "雑談", "text": "ミルクちょうだい。"}
@@ -52,6 +56,7 @@
     , "e6": { "talker": "俺っ娘", "category": "加入", "text": "うっす。"}
     , "e7": { "talker": "俺っ娘", "category": "空腹", "text": "おい！　めしがたんねーぞっ！"}
     , "e8": { "talker": "俺っ娘", "category": "延期", "text": "そりゃねーよ！"}
+    , "e9": { "talker": "俺っ娘", "category": "帝国", "text": "帝国のポンコツがよお！"}
     , "e101": { "talker": "俺っ娘", "category": "雑談", "text": "なんだよ？"}
     , "e102": { "talker": "俺っ娘", "category": "雑談", "text": "あんまフラフラするなよ。"}
     , "e103": { "talker": "俺っ娘", "category": "雑談", "text": "お前も無茶するなあ。"}
@@ -63,6 +68,7 @@
     , "f6": { "talker": "ぶっきらぼう", "category": "加入", "text": "よろしく。"}
     , "f7": { "talker": "ぶっきらぼう", "category": "空腹", "text": "お腹空いた。"}
     , "f8": { "talker": "ぶっきらぼう", "category": "延期", "text": "えー。"}
+    , "f9": { "talker": "ぶっきらぼう", "category": "帝国", "text": "邪魔。"}
     , "f101": { "talker": "ぶっきらぼう", "category": "雑談", "text": "何？"}
     , "f102": { "talker": "ぶっきらぼう", "category": "雑談", "text": "君も頑張るねえ。"}
     , "f103": { "talker": "ぶっきらぼう", "category": "雑談", "text": "危ないから帰りなよ。"}
@@ -74,6 +80,7 @@
     , "g6": { "talker": "上品", "category": "加入", "text": "よろしくお願い申し上げます。"}
     , "g7": { "talker": "上品", "category": "空腹", "text": "もう辛抱溜まりません。"}
     , "g8": { "talker": "上品", "category": "延期", "text": "そんな殺生な。"}
+    , "g9": { "talker": "上品", "category": "帝国", "text": "小五月蠅い羽虫ですね。"}
     , "g101": { "talker": "上品", "category": "雑談", "text": "どうかしました？"}
     , "g102": { "talker": "上品", "category": "雑談", "text": "王子様、見つかりますかしら。"}
     , "g103": { "talker": "上品", "category": "雑談", "text": "お気を付けくださいね。"}

@@ -199,7 +199,6 @@ export function generateAreaSpecificEnemies(count, currentArea, currentDays, ran
             : 'none'; // talkerが定義されていない場合は'none'
         const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
 
-        // ★★★ START: 11日目以降の敵に追加硬貨を付与 ★★★
         if (currentDays > GAME_CONSTANTS.BOSS_DAYS) {
             const maxAdditionalCoins = Math.floor((currentDays - GAME_CONSTANTS.BOSS_DAYS) / 2);
             const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
@@ -211,7 +210,6 @@ export function generateAreaSpecificEnemies(count, currentArea, currentDays, ran
                 }
             }
         }
-        // ★★★ END: 追加硬貨付与 ★★★
 
         generatedEnemies.push(newEnemy);
     }
@@ -229,26 +227,73 @@ export function generateSpecialRaidEnemies(count, currentDays, random) {
     // 現在の日数に応じて敵の最大硬貨枚数を決定 (通常の敵と同じスケーリング)
     const maxCoinsAllowed = 3 + Math.floor((currentDays - 1) / GAME_CONSTANTS.ENEMY_COIN_SCALING_DAYS);
 
-    // 名前に「グーラ」を含むモン娘テンプレートのみを対象とする
-    const goolaTemplates = monsterTemplates.filter(template =>
-        template.name.includes('グーラ') && template.coins.length <= maxCoinsAllowed
+    let enemyName;
+    let enemyTypes = [];
+    switch (true) {
+        case currentDays === 1:
+            enemyTypes = [
+                { name: 'エンプーサ', weight: 1 },
+                { name: 'グーラ', weight: 0 }
+            ];
+            break;
+        case currentDays < GAME_CONSTANTS.BOSS_DAYS / 2:
+            enemyTypes = [
+                { name: 'エンプーサ', weight: 7 },
+                { name: 'グーラ', weight: 3 }
+            ];
+            break;
+        case currentDays < GAME_CONSTANTS.BOSS_DAYS:
+            enemyTypes = [
+                { name: 'エンプーサ', weight: 5 },
+                { name: 'グーラ', weight: 5 }
+            ];
+            break;
+        default:
+            enemyTypes = [
+                { name: 'エンプーサ', weight: 2 },
+                { name: 'グーラ', weight: 8 }
+            ];
+    }
+    // 全ての重みの合計を計算する
+    let totalWeight = 0;
+    for (const enemyType of enemyTypes) {
+        totalWeight += enemyType.weight;
+    }
+    // 0からtotalWeightまでのランダムな数値を選択する
+    const randomNumber = Math.random() * totalWeight;
+    // ランダムな数値がどの重みの範囲に落ちるかを確認し、対応する排出物を返す
+    let cumulativeWeight = 0;
+    for (const enemyType of enemyTypes) {
+        cumulativeWeight += enemyType.weight;
+        if (randomNumber < cumulativeWeight) {
+            enemyName = enemyType.name;
+            break;
+        }
+    }
+
+    // 帝国の侵略兵器の場合、敵の数を2倍にする
+    if (enemyName === '帝国の侵略兵器') {
+        count *= 2;
+    }
+
+    const enemyTemplates = monsterTemplates.filter(template =>
+        template.name.includes(enemyName) && template.coins.length <= maxCoinsAllowed
     );
 
     const generatedEnemies = [];
     for (let i = 0; i < count; i++) {
-        if (goolaTemplates.length === 0) {
+        if (enemyTemplates.length === 0) {
             // 敵テンプレートがない場合は生成を停止
             break;
         }
-        const randomIndex = Math.floor(random() * goolaTemplates.length);
-        const selectedTemplate = goolaTemplates[randomIndex];
+        const randomIndex = Math.floor(random() * enemyTemplates.length);
+        const selectedTemplate = enemyTemplates[randomIndex];
         // talker属性をランダムに選択してMonsterインスタンスに渡す
         const chosenTalker = selectedTemplate.talker && selectedTemplate.talker.length > 0
             ? selectedTemplate.talker[Math.floor(random() * selectedTemplate.talker.length)]
             : 'none'; // talkerが定義されていない場合は'none'
         const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
 
-        // ★★★ START: 11日目以降の敵に追加硬貨を付与 ★★★
         if (currentDays > GAME_CONSTANTS.BOSS_DAYS) {
             const maxAdditionalCoins = Math.floor((currentDays - GAME_CONSTANTS.BOSS_DAYS) / 2);
             const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
@@ -260,7 +305,6 @@ export function generateSpecialRaidEnemies(count, currentDays, random) {
                 }
             }
         }
-        // ★★★ END: 追加硬貨付与 ★★★
 
         generatedEnemies.push(newEnemy);
     }

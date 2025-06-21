@@ -28,6 +28,7 @@ export const coinAttributesMap = [
     { id: 'fire', name: '火', color: 'rgb(255, 69, 0)', help: '表の場合、火の硬貨を持たない全ての敵の戦力値に1を減算する。半減まで可能。' },
     { id: 'poison', name: '毒', color: 'rgb(128, 0, 128)', help: '表の場合、毒の硬貨を持たない全ての敵の戦力値に1を減算する。半減まで可能。' },
     { id: 'enemy', name: '敵', color: 'rgb(50, 50, 50)', help: '敵専用。必ず表になる。' },
+    { id: 'machine', name: '機', color: 'rgb(50, 50, 50)', help: '敵専用。毒を無効化する。' },
 ];
 
 // モン娘のテンプレート定義
@@ -63,6 +64,9 @@ export const monsterTemplates = [
     { name: 'キクロプス', coins: ['oni', 'oni', 'oni', 'thunder', 'thunder', 'iron', 'iron'], upkeep: 7, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう'] },
     { name: 'カリブディス', coins: ['water', 'water', 'water', 'water', 'power', 'power', 'power', 'power'], upkeep: 8, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう', '上品'] },
     { name: 'ドラゴニュート', coins: ['scale', 'scale', 'sky', 'sky', 'fire', 'fire', 'poison', 'poison'], upkeep: 8, talker: ['真面目', '元気', '真面目元気', 'ゆるい', '俺っ娘', 'ぶっきらぼう', '上品'] },
+    { name: 'ツチグモLv1', coins: ['enemy', 'machine'], upkeep: 2, talker: ['none'] },
+    { name: 'ツチグモLv2', coins: ['enemy', 'machine', 'machine'], upkeep: 3, talker: ['none'] },
+    { name: 'エンプーサ', coins: ['enemy', 'scale', 'blood'], upkeep: 3, talker: ['none'] },
     { name: 'グーラLv1', coins: ['enemy', 'oni', 'blood'], upkeep: 3, talker: ['none'] },
     { name: 'グーラLv2', coins: ['enemy', 'oni', 'blood', 'power'], upkeep: 4, talker: ['none'] },
     { name: 'グーラLv3', coins: ['enemy', 'oni', 'blood', 'power', 'power'], upkeep: 5, talker: ['none'] },
@@ -208,13 +212,16 @@ export const GAME_CONSTANTS = {
     INITIAL_MILK: 3,
     BOSS_DAYS: 10, // ボス戦が開始される日数
     MAX_DAYS: 20, // ラスボス戦が開始される日数
-    RAID_BASE_SPECIAL_CHANCE: 0.2, // 特殊襲撃の基本確率
+    RAID_BASE_SPECIAL_CHANCE: 0.3, // 特殊襲撃の基本確率
     RAID_BASE_DUEL_CHANCE: 0.2, // 決闘の基本確率
     RAID_BASE_NORMAL_CHANCE: 0.5,   // 通常襲撃の基本確率
+    RAID_EMPIRE_MIN_PARTY_SIZE: 4, // 帝国の襲撃が発生する最低仲間人数
+    RAID_EMPIRE_CHANCE: 2, // 帝国の襲撃確率(仲間の人数)
+    RAID_EMPIRE_COUNT: 2, // 帝国の襲撃回数(仲間の人数)
     FAVOUR_EVENT_CHANCE: 0.1, // 神の寵愛の基本確率
-    SISTER_EVENT_CHANCE: 0.1, // 妹加入の基本確率
+    SISTER_EVENT_CHANCE: 0.2, // 妹加入の基本確率
     RECRUIT_EVENT_CHANCE: 0.7, // 仲間勧誘の基本確率
-    RECRUIT_EVENT_CHANCE_OF_SPECIAL: 0.2, // 仲間勧誘イベントで、全ての種族が抽選の対象になる確率
+    RECRUIT_EVENT_CHANCE_OF_SPECIAL: 0.25, // 仲間勧誘イベントで、全ての種族が抽選の対象になる確率
     RAID_MAX_ATTEMPTS: 3, // 襲撃時のコイントス最大試行回数
     FOOD_SUPPLY: 3, // 探索時の食料獲得量
     FOOD_PER_COIN: 1, // 硬貨1枚あたりの基本食料獲得量

@@ -9,10 +9,10 @@ import {
     clearActionArea,
     showCombatLogModal,
     createCoinTooltipHtml,
-    getGroupedCoinDisplay // 新しく追加した関数をインポート
+    getGroupedCoinDisplay
 } from './uiManager.js';
 import { coinAttributesMap, GAME_CONSTANTS } from './data.js';
-import { playSfx } from './musicManager.js'; // playSfxをインポート
+import { playSfx } from './musicManager.js';
 import { showSpeechBubble } from './speechBubbleManager.js';
 
 /**
@@ -34,8 +34,14 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
             // ボス戦では、現在使用可能なモン娘のみを選択肢として提示
             const availableMonstersBoss = party.filter(m => !m.hasBeenSentToBattle);
 
+            // 敵モン娘の総硬貨数を取得
+            let totalEnemyCoins = 0;
+            enemies.forEach(enemy => {
+                totalEnemyCoins += enemy.totalCoins;
+            });
+
             // ここに敵モン娘の情報を表示する処理を追加
-            logMessage("対戦相手の情報:");
+            logMessage(`対戦相手の情報: (総硬貨数: ${totalEnemyCoins})`);
             enemies.forEach(enemy => {
                 // 硬貨の表示をグループ化して表示
                 const enemyCoinHtml = getGroupedCoinDisplay(enemy.allCoins, coinAttributesMap);
@@ -90,12 +96,10 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
         }
     });
 
+    // コイントスの上限を設定
     let maxFightAttempts = GAME_CONSTANTS.RAID_MAX_ATTEMPTS;
-    if (game.playerLife.name === '軍人') {
-        maxFightAttempts += 2;
-    }
-
     let fightAttempts = 0;
+    if (game.playerLife.name === '軍人') maxFightAttempts += 2;
     combatLogMessages.push(`<p>**${maxFightAttempts}回まで**コイントスできるよ。</p>`);
 
     // 初回のポップアップ表示時に敵の画像パスを渡す
@@ -248,7 +252,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
         }
         if (partyPoisonHeads > 0) {
             for (const e of enemyIndividualCombatPowers) {
-                if (!e.originalOutcomes.some(o => o.type === 'poison')) {
+                if (!e.originalOutcomes.some(o => o.type === 'poison' || o.type === 'machine')) {
                     e.power = Math.max(Math.floor(e.monster.totalCoins / 2), e.power - partyPoisonHeads);
                     combatLogMessages.push(`<p>味方の${createCoinTooltipHtml('poison', coinAttributesMap)}の力で、敵モン娘「<span class="monster-name-color">${e.monster.name}</span>」(${createCoinTooltipHtml('poison', coinAttributesMap)}硬貨なし)の戦力値が減少！</p>`);
                 }
@@ -296,7 +300,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
         }
         if (enemyPoisonHeads > 0) {
             for (const p of partyIndividualCombatPowers) {
-                if (!p.originalOutcomes.some(o => o.type === 'poison')) {
+                if (!p.originalOutcomes.some(o => o.type === 'poison' || o.type === 'machine')) {
                     p.power = Math.max(Math.floor(p.monster.totalCoins / 2), p.power - enemyPoisonHeads);
                     combatLogMessages.push(`<p>敵の${createCoinTooltipHtml('poison', coinAttributesMap)}の力で、味方モン娘「<span class="monster-name-color">${p.monster.name}</span>」(${createCoinTooltipHtml('poison', coinAttributesMap)}硬貨なし)の戦力値が減少！</p>`);
                 }
