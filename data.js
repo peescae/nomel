@@ -216,7 +216,7 @@ export const GAME_CONSTANTS = {
     RAID_BASE_DUEL_CHANCE: 0.2, // 決闘の基本確率
     RAID_BASE_NORMAL_CHANCE: 0.5,   // 通常襲撃の基本確率
     RAID_EMPIRE_MIN_PARTY_SIZE: 4, // 帝国の襲撃が発生する最低仲間人数
-    RAID_EMPIRE_CHANCE: 2, // 帝国の襲撃確率(仲間の人数)
+    RAID_EMPIRE_CHANCE: 3, // 帝国の襲撃確率(仲間の人数)
     RAID_EMPIRE_COUNT: 2, // 帝国の襲撃回数(仲間の人数)
     FAVOUR_EVENT_CHANCE: 0.1, // 神の寵愛の基本確率
     SISTER_EVENT_CHANCE: 0.2, // 妹加入の基本確率

@@ -650,7 +650,7 @@ async function handleImperialInvasionRaid(restingParty, currentArea) {
 
             // 追加硬貨を付与（少な目）
             if (game.days > GAME_CONSTANTS.BOSS_DAYS) {
-                const maxAdditionalCoins = Math.floor((game.days - GAME_CONSTANTS.BOSS_DAYS) / 3);
+                const maxAdditionalCoins = Math.floor((game.days - GAME_CONSTANTS.BOSS_DAYS) / 4);
                 const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
 
                 for (let j = 0; j < numAdditionalCoins; j++) {
