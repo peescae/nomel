@@ -648,9 +648,10 @@ async function handleImperialInvasionRaid(restingParty, currentArea) {
                 : 'none';
             const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
 
+            /* 難易度を様子見するため、一旦追加硬貨は無しにしておく
             // 追加硬貨を付与（少な目）
             if (game.days > GAME_CONSTANTS.BOSS_DAYS) {
-                const maxAdditionalCoins = Math.floor((game.days - GAME_CONSTANTS.BOSS_DAYS) / 4);
+                const maxAdditionalCoins = Math.floor((game.days - GAME_CONSTANTS.BOSS_DAYS) / 5);
                 const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
 
                 for (let j = 0; j < numAdditionalCoins; j++) {
@@ -660,6 +661,7 @@ async function handleImperialInvasionRaid(restingParty, currentArea) {
                     }
                 }
             }
+            */
             enemies.push(newEnemy);
         }
 
