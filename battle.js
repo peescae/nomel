@@ -344,8 +344,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
         partyCoinOutcomes.forEach(mOutcome => {
             if (mOutcome.outcomes.some(c => c.type === 'blood' && c.isHead)) {
                 // 血の硬貨が表の場合、このモン娘の戦闘手当を0にする
-                currentFightFoodAllowance -= mOutcome.monster.totalCoins * fightAttempts;
-                currentFightFoodAllowance = Math.max(0, currentFightFoodAllowance); // 0を下回らないようにする
+                currentFightFoodAllowance = Math.max(0, currentFightFoodAllowance - mOutcome.monster.coinAttributes.length); // 0を下回らないようにする
                 combatLogMessages.push(`<p>味方${createCoinTooltipHtml('blood', coinAttributesMap)}の力で、<span class="monster-name-color">${mOutcome.monster.name}</span> の戦闘手当がゼロになった！</p>`);
             }
         });

@@ -1545,6 +1545,8 @@ async function gameLoop() {
 
             for (let i = 0; i < numChecks; i++) {
                 if (random() < (baseChance / 100)) { // 確率計算
+                    playSfx('警告');
+
                     if (!imperialRaidOccurred) playMusic('帝国');
 
                     imperialRaidOccurred = true;
@@ -1552,6 +1554,8 @@ async function gameLoop() {
                     const imperialRaidSuccess = await handleImperialInvasionRaid(game.party.filter(m => !m.hasBeenSentToBattle), currentArea);
 
                     if (!imperialRaidSuccess) break;
+
+                    if (game.days < GAME_CONSTANTS.BOSS_DAYS) break; // 10日以前は、2回以上の襲撃は発生しないようにする
                 }
             }
             // 襲撃発生後、hasBeenSentToBattleフラグをリセット
