@@ -33,11 +33,11 @@
                         <div id="volume-controls">
                             <div style="display: inline-block; margin: 0 1px;">
                                 <label for="music-volume" style="color: #61dafb;">音楽:</label>
-                                <input type="range" id="music-volume" min="0" max="10" value="7" step="1" style="width: 120px;">
+                                <input type="range" id="music-volume" min="0" max="10" value="7" step="1" style="width: 100px;">
                             </div>
                             <div style="display: inline-block; margin: 0 1px;">
                                 <label for="sfx-volume" style="color: #61dafb;">効果音:</label>
-                                <input type="range" id="sfx-volume" min="0" max="10" value="7" step="1" style="width: 120px;">
+                                <input type="range" id="sfx-volume" min="0" max="10" value="7" step="1" style="width: 100px;">
                             </div>
                             <!-- 硬貨表示切り替えボタンの追加 -->
                             <div style="display: inline-block; margin: 0 1px; font-size: 0.8em;">
@@ -81,9 +81,6 @@
                     </div>
                     <button id="start-game-button" class="action-button">ゲーム開始</button>
                 </div>
-
-                <div id="action-area">
-                </div>
             </div>
 
             <!-- New right column container -->
@@ -104,6 +101,13 @@
             </div>
 
             <div id="coin-animation-area"></div>
+        </div>
+
+        <!-- action-areaをラップする新しいコンテナ -->
+        <div id="action-area-wrapper" class="action-area-wrapper">
+            <div id="action-area">
+                <!-- ボタンがここに動的に追加されます -->
+            </div>
         </div>
 
         <!-- ホムンクルス画像とヘルプボタン -->
@@ -257,6 +261,13 @@
                             特殊襲撃にエンプーサを追加（序盤はエンプーサが出やすい）<br>
                             野営の直前に帝国の侵略兵器の襲撃イベントを追加（仲間の数が多いほど襲撃されやすくなる）
                         </li>
+                        <li>
+                            <strong>2025/06/28 Ver.1.5</strong> 画面レイアウトを全体的に調整<br>
+                            選択肢ボタンを表示するエリアをサブウィンドウ化<br>
+                            硬貨の表示を調整<br>
+                            相変わらず弱いラスボス戦を若干テコ入れ<br>
+                            帝国の侵略兵器の種類を追加（タタリモッケ、ヒノクルマ）
+                        </li>
                     </ul>
                 </div>
                 <button id="help-modal-close-button" class="modal-close-button">閉じる</button>
@@ -269,7 +280,7 @@
                 <h3 id="delicacy-help-modal-title">珍味</h3>
                 <div id="delicacy-help-content" class="modal-log-content">
                     <!-- 珍味の情報がここに動的に追加されます -->
-                    <p>探索で特定のモン娘が特定の地形を探索すると珍味が見つかるよ！</p>
+                    <p>探索で特定のモン娘が特定の地形を<br>探索すると珍味が見つかるよ！</p>
                     <p>食べるとミルクが生産されるよ！</p>
                     <div id="delicacy-list"></div>
                 </div>

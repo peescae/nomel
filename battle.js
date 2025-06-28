@@ -9,11 +9,13 @@ import {
     clearActionArea,
     showCombatLogModal,
     createCoinTooltipHtml,
-    getGroupedCoinDisplay
+    getGroupedCoinDisplay,
+    createButtons // uiManager.jsからcreateButtons関数をインポート
 } from './uiManager.js';
 import { coinAttributesMap, GAME_CONSTANTS } from './data.js';
 import { playSfx } from './musicManager.js';
 import { showSpeechBubble } from './speechBubbleManager.js';
+import { displayGuideMessage } from './helpUI.js';
 
 /**
  * 戦闘を処理する関数。ボス戦と通常戦闘の両方に対応。
@@ -222,7 +224,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
         }
 
         // 神の寵愛を戦力値に加算
-        applyFavourEffectsToIndividualMonsters(game, partyIndividualCombatPowers);
+        applyFavourEffectsToIndividualCombatPowers(game, partyIndividualCombatPowers);
 
         // 罠の硬貨を戦力値に減算
         calcTrapCoinPower(selectedPartyMonsters, enemyIndividualCombatPowers, coinAttributesMap, combatLogMessages, battleType);
@@ -404,8 +406,8 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
         showSpeechBubble(selectedPartyMonsters, '敗北', random);
         logMessage("負けちゃった！");
         clearActionArea();
-        const actionArea = document.getElementById('action-area');
-        if (actionArea) actionArea.innerHTML = '<button data-value="gameover-confirm">負けちゃった</button>';
+        // uiManagerのcreateButtons関数を使用してボタンを生成
+        createButtons([{ id: 'gameover-confirm', text: '負けちゃった', className: 'action-button' }]);
         await waitForButtonClick();
 
         playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
@@ -427,7 +429,7 @@ export async function conductFight(game, party, enemies, random, currentArea, ba
  * @param {object} game - ゲームの状態オブジェクト。
  * @param {Array<object>} partyIndividualCombatPowers - 戦闘に参加しているモン娘とその個別戦力値の配列。
  */
-function applyFavourEffectsToIndividualMonsters(game, partyIndividualCombatPowers) {
+function applyFavourEffectsToIndividualCombatPowers(game, partyIndividualCombatPowers) {
     if (!game.favour || game.favour.length === 0) {
         return; // 神の寵愛がない場合は何もしない
     }
@@ -491,17 +493,22 @@ async function selectBattleParty(game, availableMonsters, battleType) {
     const selectedParty = [];
 
     const partyList = document.getElementById('party-list');
-    // UIを更新して、選択可能なモン娘と使用済みのモン娘を区別して表示
-    updateUI(game, coinAttributesMap, selectedParty, game.currentArea, true, availableMonsters, GAME_CONSTANTS.MAX_PARTY_SIZE); // 選択フェーズUIを有効化し、選択可能プールを渡す
 
-    const actionArea = document.getElementById('action-area');
-    clearActionArea();
-    const finishButton = document.createElement('button');
-    finishButton.innerText = "派遣を決定";
-    finishButton.dataset.value = 'finish-battle-expedition'; // data-value を変更
-    actionArea.appendChild(finishButton);
-
+    // このPromiseを外側の関数が解決するまで保持する
     return new Promise(resolve => {
+        // uiManagerのcreateButtonsを使用して「派遣を決定」ボタンを生成
+        const createFinishButton = () => {
+            createButtons([{
+                id: 'finish-battle-expedition',
+                text: '派遣を決定',
+                className: 'action-button'
+            }]);
+        };
+
+        // 初期表示とボタン生成
+        updateUI(game, coinAttributesMap, selectedParty, game.currentArea, true, availableMonsters, GAME_CONSTANTS.MAX_PARTY_SIZE);
+        createFinishButton();
+
         const partySelectionListener = (event) => {
             let clickedLi = event.target.closest('li');
             if (clickedLi && clickedLi.dataset.index !== undefined) {
@@ -525,29 +532,36 @@ async function selectBattleParty(game, availableMonsters, battleType) {
 
                 playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
+                // UIを更新して、選択状態を反映
                 updateUI(game, coinAttributesMap, selectedParty, game.currentArea, true, availableMonsters, GAME_CONSTANTS.MAX_PARTY_SIZE);
             }
         };
 
-        const finalizeSelectionListener = async (event) => {
-            let clickedButton = event.target.closest('button');
-            if (clickedButton && clickedButton.dataset.value === 'finish-battle-expedition') {
-                if (selectedParty.length === 0) {
-                    logMessage("必ず1人はモン娘を選んで！");
-                    return; // 選択されていない場合は再選択を促す
-                }
-                // イベントリスナーを削除
-                if (partyList) partyList.removeEventListener('click', partySelectionListener);
-                if (actionArea) actionArea.removeEventListener('click', finalizeSelectionListener);
+        // partyList にイベントリスナーを設定
+        if (partyList) partyList.addEventListener('click', partySelectionListener);
 
-                clearActionArea();
-                game.currentPhase = 'idle'; // フェーズをアイドルに戻す
-                updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを通常状態に戻す
-                resolve(selectedParty);
+        // waitForButtonClick() の解決を待つ
+        // ここを無限ループにしないよう、条件が満たされるまで再帰的に呼び出す
+        const awaitButtonClick = async () => {
+            const chosenId = await waitForButtonClick();
+            if (chosenId === 'finish-battle-expedition') {
+                if (selectedParty.length === 0) {
+                    displayGuideMessage('ひとり選んで');
+                    playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e)); // NG音を追加
+                    createFinishButton(); // ボタンを再表示して選択を促す
+                    await awaitButtonClick(); // 再度ボタンクリックを待つ
+                } else {
+                    // イベントリスナーを削除
+                    if (partyList) partyList.removeEventListener('click', partySelectionListener);
+                    // waitForButtonClickは既にclearActionAreaとhideActionAreaWrapperを呼んでいる
+
+                    game.currentPhase = 'idle'; // フェーズをアイドルに戻す
+                    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを通常状態に戻す
+                    resolve(selectedParty);
+                }
             }
         };
 
-        if (partyList) partyList.addEventListener('click', partySelectionListener);
-        if (actionArea) actionArea.addEventListener('click', finalizeSelectionListener);
+        awaitButtonClick(); // 最初のボタンクリック待機を開始
     });
 }

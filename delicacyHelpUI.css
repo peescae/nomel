@@ -11,7 +11,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2001; /* ホムンクルスヘルプより低いz-index */
+    z-index: 999; /* ホムンクルスヘルプより低いz-index */
     display: none; /* 初期状態では非表示 */
     pointer-events: none; /* 下層要素へのクリックを透過させる */
 }
@@ -23,7 +23,7 @@
     padding: 4px 20px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     text-align: center;
-    max-width: 600px; /* 少し小さめに設定 */
+    max-width: 480px;
     min-width: 320px;
     max-height: 90%;
     color: #f8f8f2;

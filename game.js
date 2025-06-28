@@ -19,7 +19,9 @@ import {
     toggleCoinDisplay,
     createCoinTooltipHtml,
     showCoinTooltip,
-    setImagePaths
+    setImagePaths,
+    createButtons,
+    getGroupedCoinDisplay
 } from './uiManager.js';
 import { conductFight } from './battle.js';
 import { updateEstimatedFoodGain } from './food.js';
@@ -82,7 +84,7 @@ async function offerMonstersToJoin() {
     game.currentPhase = 'joinPhase';
     logMessage(`<br/><div id="game-messages-phase">--- モン娘加入フェーズ ---</div>`);
     displayGuideMessage('モン娘加入フェーズ1人目');
-    clearActionArea();
+    clearActionArea(); // サブウィンドウを非表示にするために呼び出す
 
     let initialChoices = [];
     // 現在パーティにいない、かつ'enemy'属性を持たない全てのモン娘テンプレート
@@ -96,22 +98,17 @@ async function offerMonstersToJoin() {
     // 選択肢をシャッフルして表示順をランダムにする
     initialChoices.sort(() => 0.5 - random());
 
-    const actionArea = document.getElementById('action-area');
-    for (const monster of initialChoices) {
-        const button = document.createElement('button');
-        button.className = 'choice-button monster-choice-button';
-        const imageUrl = imagePaths[monster.name] || './image/default.png'; // 画像パスを取得、なければデフォルト画像
-        button.innerHTML = `<img src="${imageUrl}" alt="${monster.name}" class="monster-image">`;
-        button.dataset.monsterName = monster.name; // ツールチップ表示用に名前をdata属性に保存
-        button.dataset.value = monster.name; // クリックされたモン娘の名前を返すようにする
-        actionArea.appendChild(button);
+    // createButtons関数に渡すボタンデータの配列を構築
+    const initialButtons = initialChoices.map(monster => ({
+        id: monster.name, // data-valueとしてモン娘の名前を使用
+        text: `<img src="${imagePaths[monster.name] || './image/default.png'}" alt="${monster.name}" class="monster-image">`,
+        className: 'choice-button monster-choice-button',
+        monster: monster // ツールチップのためにモンスターオブジェクトを渡す
+    }));
 
-        // マウスイベントリスナー
-        button.addEventListener('mouseover', (event) => showMonsterTooltip(monster, event, coinAttributesMap));
-        button.addEventListener('mouseout', hideMonsterTooltip);
-    }
+    createButtons(initialButtons); // uiManagerのcreateButtonsを使用してボタンを生成
 
-    const initialChoiceName = await waitForButtonClick();
+    const initialChoiceName = await waitForButtonClick(); // uiManagerのwaitForButtonClickを使用
     const chosenInitialMonster = initialChoices.find(m => m.name === initialChoiceName);
     game.party.push(chosenInitialMonster);
     game.milk--;
@@ -138,30 +135,20 @@ async function offerMonstersToJoin() {
         // 選択肢をシャッフル
         subsequentChoices.sort(() => 0.5 - random());
 
-        clearActionArea(); // 各ループの開始時にクリア
-        for (const monster of subsequentChoices) {
-            const button = document.createElement('button');
-            button.className = 'choice-button monster-choice-button'; // 新しいクラスを追加
-            const imageUrl = imagePaths[monster.name] || './image/default.png';
-            button.innerHTML = `<img src="${imageUrl}" alt="${monster.name}" class="monster-image">`;
-            button.dataset.monsterName = monster.name;
-            button.dataset.value = monster.name; // クリックされたモン娘の名前を返すようにする
-            actionArea.appendChild(button);
+        const subsequentButtons = subsequentChoices.map(monster => ({
+            id: monster.name,
+            text: `<img src="${imagePaths[monster.name] || './image/default.png'}" alt="${monster.name}" class="monster-image">`,
+            className: 'choice-button monster-choice-button',
+            monster: monster // ツールチップのためにモンスターオブジェクトを渡す
+        }));
 
-            // マウスイベントリスナー
-            button.addEventListener('mouseover', (event) => showMonsterTooltip(monster, event, coinAttributesMap));
-            button.addEventListener('mouseout', hideMonsterTooltip);
-        }
-
-        // MAX_PARTY_SIZE未満の場合のみ「仲間加入を終了」ボタンを表示
+        // MAX_PARTY_SIZE未満の場合のみ「仲間加入を終了」ボタンを追加
         if (game.party.length < GAME_CONSTANTS.MAX_PARTY_SIZE) {
-            const finishButton = document.createElement('button');
-            finishButton.innerText = "仲間加入を終了";
-            finishButton.dataset.value = 'finish';
-            actionArea.appendChild(finishButton);
+            subsequentButtons.push({ id: 'finish', text: '仲間加入を終了', className: 'action-button' });
         }
+        createButtons(subsequentButtons); // uiManagerのcreateButtonsを使用してボタンを生成
 
-        const choiceName = await waitForButtonClick();
+        const choiceName = await waitForButtonClick(); // uiManagerのwaitForButtonClickを使用
 
         if (choiceName === 'finish') {
             displayGuideMessage('モン娘加入打ち切り');
@@ -183,7 +170,8 @@ async function offerMonstersToJoin() {
         displayGuideMessage('出発');
     }
 
-    if (actionArea) actionArea.innerHTML = '<button data-value="continue">出発</button>';
+    // 最終的な「出発」ボタンを表示
+    createButtons([{ id: 'continue', text: '出発', className: 'action-button' }]);
     await waitForButtonClick();
 
     clearActionArea(); // モン娘加入フェーズ終了時にactionAreaをクリア
@@ -214,11 +202,7 @@ async function selectExplorationArea() {
     game.estimatedFoodGain = 0; // エリア選択時は予想食料をリセット
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して表示を反映
 
-    const actionArea = document.getElementById('action-area');
-    areaChoices.forEach((area, index) => {
-        const button = document.createElement('button');
-        button.className = 'choice-button';
-        // HTML要素を直接innerHTMLに設定する
+    const areaButtons = areaChoices.map((area, index) => {
         // 硬貨属性をカウントし、まとめた表示形式にする
         const coinCounts = {};
         area.coinAttributes.forEach(coinId => {
@@ -231,14 +215,15 @@ async function selectExplorationArea() {
             return count > 1 ? `${coinName}×${count}` : coinName;
         }).join(' ');
 
-        button.innerHTML = `${index + 1}: <span class="monster-name-color">${area.name}</span> (${formattedCoinAttributes})`;
-        button.dataset.value = area.id; // エリアのIDを返すように変更
-        actionArea.appendChild(button);
-
-        // マウスイベントリスナー
-        button.addEventListener('mouseover', (event) => showAreaTooltip(area, event, coinAttributesMap, game)); // gameオブジェクトを渡す
-        button.addEventListener('mouseout', hideAreaTooltip); // hideAreaTooltip を使用
+        return {
+            id: area.id,
+            text: `${index + 1}: <span class="monster-name-color">${area.name}</span> ${formattedCoinAttributes}`,
+            className: 'choice-button',
+            area: area // ツールチップのためにエリアオブジェクトを渡す
+        };
     });
+
+    createButtons(areaButtons); // uiManagerのcreateButtonsを使用してボタンを生成
 
     const chosenId = await waitForButtonClick();
 
@@ -277,12 +262,12 @@ async function sendMonstersOnExpedition(currentArea) {
     // ここで一度全てを更新し、イベントリスナーを付与
     updateUI(game, coinAttributesMap, expeditionParty, currentArea, true, game.party, GAME_CONSTANTS.MAX_PARTY_SIZE); // 選択フェーズ用のUI更新, 全員選択可能
 
-    const actionArea = document.getElementById('action-area');
-    clearActionArea();
-    const finishButton = document.createElement('button');
-    finishButton.innerText = "派遣を決定";
-    finishButton.dataset.value = 'finish-expedition'; // data-value を変更
-    actionArea.appendChild(finishButton);
+    // uiManagerのcreateButtonsを使用して「派遣を決定」ボタンを生成
+    createButtons([{
+        id: 'finish-expedition',
+        text: '派遣を決定',
+        className: 'action-button'
+    }]);
 
     return new Promise(resolve => {
         const partySelectionListener = (event) => {
@@ -314,18 +299,21 @@ async function sendMonstersOnExpedition(currentArea) {
             }
         };
 
-        const finalizeExpeditionListener = async (event) => {
-            let clickedButton = event.target.closest('button');
-            if (clickedButton && clickedButton.dataset.value === 'finish-expedition') {
+        // 「派遣を決定」ボタンのクリックリスナーはwaitForButtonClick()が担当するため、ここでは不要
+        // partyList にイベントリスナーを設定
+        if (partyList) partyList.addEventListener('click', partySelectionListener);
+
+        // waitForButtonClick() の解決を待つ
+        waitForButtonClick().then(chosenId => {
+            if (chosenId === 'finish-expedition') {
                 // イベントリスナーを削除
                 if (partyList) partyList.removeEventListener('click', partySelectionListener);
-                if (actionArea) actionArea.removeEventListener('click', finalizeExpeditionListener);
 
                 // 最終的な待機中のモン娘リストを計算
                 const finalRestingParty = game.party.filter(m => !expeditionParty.includes(m));
 
                 logMessage(`探索に派遣されるモン娘: ${expeditionParty.map(m => `<span class="monster-name-color">${m.name}</span>`).join(', ') || 'なし'}`);
-                logMessage(`キャンプで待機するモン娘: ${finalRestingParty.map(m => `<span class="monster-name-color">${m.name}</span>`).join(', ') || 'なし'}`);
+                logMessage(`キャンプで待機するモン娘: ${finalRestingParty.map(m => `<span class="monster-name-color">${m.name}</span>`).join(', ')}`);
 
                 // 派遣されたモン娘を保持する
                 game.expeditionParty = expeditionParty;
@@ -338,10 +326,7 @@ async function sendMonstersOnExpedition(currentArea) {
                 updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを通常状態に戻す
                 resolve({ expeditionParty, restingParty: finalRestingParty });
             }
-        };
-
-        if (partyList) partyList.addEventListener('click', partySelectionListener);
-        if (actionArea) actionArea.addEventListener('click', finalizeExpeditionListener);
+        });
     });
 }
 
@@ -428,9 +413,7 @@ async function handleRaid(restingParty, currentArea) {
 
     logMessage(`敵モン娘 ${enemies.length} 体が出現！`);
     enemies.forEach(enemy => {
-        const normalCoinsHtml = enemy.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, false)).join(' ');
-        const additionalCoinsHtml = enemy.additionalCoins.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, true)).join(' ');
-        const enemyCoinHtml = `${normalCoinsHtml} ${additionalCoinsHtml}`;
+        const enemyCoinHtml = getGroupedCoinDisplay(enemy.allCoins, coinAttributesMap);
         logMessage(` - <span class="monster-name-color">${enemy.name}</span>  (${enemy.totalCoins})  ${enemyCoinHtml}`);
     });
 
@@ -443,8 +426,8 @@ async function handleRaid(restingParty, currentArea) {
             logMessage("おじさんのミルクが搾り取られちゃった。");
             game.milk--;;
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
-            const actionArea = document.getElementById('action-area');
-            if (actionArea) actionArea.innerHTML = '<button data-value="continue">次へ</button>';
+            // uiManagerのcreateButtons関数を使用してボタンを生成
+            createButtons([{ id: 'continue', text: '次へ', className: 'action-button' }]);
             await waitForButtonClick();
 
             playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
@@ -462,8 +445,8 @@ async function handleRaid(restingParty, currentArea) {
             logMessage("なんとか逃げ切れたけど、全ての食料を置いてきちゃった。");
             game.food = 0;
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
-            const actionArea = document.getElementById('action-area');
-            if (actionArea) actionArea.innerHTML = '<button data-value="continue">次へ</button>';
+            // uiManagerのcreateButtons関数を使用してボタンを生成
+            createButtons([{ id: 'continue', text: '次へ', className: 'action-button' }]);
             await waitForButtonClick();
 
             playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
@@ -478,8 +461,6 @@ async function handleRaid(restingParty, currentArea) {
         }
         return true; // 食料ゼロでゲームオーバーは後続のフェーズで判定
     }
-
-    const actionArea = document.getElementById('action-area');
 
     // 戦闘ロジックを呼び出す
     const battleResult = await conductFight(game, restingParty, enemies, random, currentArea, raidType);
@@ -500,7 +481,8 @@ async function handleRaid(restingParty, currentArea) {
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
         }
         clearActionArea();
-        actionArea.innerHTML = '<button data-value="gameover-confirm">あらら</button>';
+        // uiManagerのcreateButtons関数を使用してボタンを生成
+        createButtons([{ id: 'gameover-confirm', text: 'あらら', className: 'action-button' }]);
         await waitForButtonClick();
 
         playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
@@ -531,28 +513,17 @@ async function handleRaid(restingParty, currentArea) {
         if (recruitableEnemies.length > 0) {
             raidType === 'duel' ? displayGuideMessage('決闘後の勧誘') : displayGuideMessage('ミルクで勧誘');
 
-            clearActionArea();
-            recruitableEnemies.forEach((enemy, index) => {
-                const button = document.createElement('button');
-                button.className = 'choice-button';
-                // ここを修正: モン娘の名前と硬貨の表示を画像に置き換える
-                const imageUrl = imagePaths[enemy.name] || './image/default.png';
-                button.innerHTML = `<img src="${imageUrl}" alt="${enemy.name}" class="monster-image">`;
-                button.dataset.monsterName = enemy.name;
-                button.dataset.value = enemy.name; // クリックされたモン娘の名前を返すようにする
-                actionArea.appendChild(button);
-
-                // モン娘全体のツールチップイベントリスナーをボタンに直接付与
-                button.addEventListener('mouseover', (event) => showMonsterTooltip(enemy, event, coinAttributesMap));
-                button.addEventListener('mouseout', hideMonsterTooltip);
-
-            });
-            const skipButton = document.createElement('button');
-            skipButton.innerText = "断る";
-            skipButton.dataset.value = 'skip';
-            actionArea.appendChild(skipButton);
+            // uiManagerのcreateButtons関数に渡すボタンデータの配列を構築
+            const recruitButtons = recruitableEnemies.map(enemy => ({
+                id: enemy.name,
+                text: `<img src="${imagePaths[enemy.name] || './image/default.png'}" alt="${enemy.name}" class="monster-image">`,
+                className: 'choice-button',
+                monster: enemy // ツールチップのためにモンスターオブジェクトを渡す
+            }));
+            recruitButtons.push({ id: 'skip', text: '断る', className: 'action-button' });
 
             while (true) {
+                createButtons(recruitButtons); // uiManagerのcreateButtonsを使用してボタンを生成
                 const choice = await waitForButtonClick();
                 if (choice === 'skip') {
                     playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
@@ -680,8 +651,8 @@ async function handleImperialInvasionRaid(restingParty, currentArea) {
         game.food = 0;
         updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
         clearActionArea();
-        const actionArea = document.getElementById('action-area');
-        if (actionArea) actionArea.innerHTML = '<button data-value="gameover-confirm">あらら</button>';
+        // uiManagerのcreateButtons関数を使用してボタンを生成
+        createButtons([{ id: 'gameover-confirm', text: 'あらら', className: 'action-button' }]);
         await waitForButtonClick();
 
         playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
@@ -778,7 +749,7 @@ async function handleBossBattle(currentArea) {
     logMessage(`食料を${foodRewards}獲得したよ！`);
     updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
 
-    stopMusic();
+    await stopMusic(true);
 
     return true; // 全てのガーゴイルに勝利
 }
@@ -816,11 +787,7 @@ async function startFinalBossBattle() {
     // 選択肢をシャッフル
     chosenAreas.sort(() => 0.5 - random());
 
-    const actionArea = document.getElementById('action-area');
-    chosenAreas.forEach((area, index) => {
-        const button = document.createElement('button');
-        button.className = 'choice-button';
-        
+    const areaButtons = chosenAreas.map((area, index) => {
         // 硬貨属性をカウントし、まとめた表示形式にする
         const coinCounts = {};
         area.coinAttributes.forEach(coinId => {
@@ -833,14 +800,14 @@ async function startFinalBossBattle() {
             return count > 1 ? `${coinName}×${count}` : coinName;
         }).join(' ');
 
-        button.innerHTML = `${index + 1}: <span class="monster-name-color">${area.name}</span> (${formattedCoinAttributes})`;
-        button.dataset.value = area.id; // エリアのIDを返すように変更
-        actionArea.appendChild(button);
-
-        // マウスイベントリスナー
-        button.addEventListener('mouseover', (event) => showAreaTooltip(area, event, coinAttributesMap, game));
-        button.addEventListener('mouseout', hideAreaTooltip); // hideAreaTooltip を使用
+        return {
+            id: area.id,
+            text: `${index + 1}: <span class="monster-name-color">${area.name}</span> (${formattedCoinAttributes})`,
+            className: 'choice-button',
+            area: area // ツールチップのためにエリアオブジェクトを渡す
+        };
     });
+    createButtons(areaButtons); // uiManagerのcreateButtonsを使用してボタンを生成
     
     const chosenAreaId = await waitForButtonClick();
     const finalBossArea = areaTypes.find(area => area.id === chosenAreaId);
@@ -950,37 +917,20 @@ async function handleRecruitmentEvent(currentArea) {
         monsterToOffer = getUniqueRandomMonsters(game, 1, potentialTemplates, false, 0, game.coinSizeLimit, random)[0];
     }
 
-    const normalCoinsHtml = monsterToOffer.coinAttributes.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, false)).join(' ');
-    const additionalCoinsHtml = monsterToOffer.additionalCoins.map(attrId => createCoinTooltipHtml(attrId, coinAttributesMap, true)).join(' ');
-    const monsterCoinHtml = `${normalCoinsHtml} ${additionalCoinsHtml}`;
-
-    logMessage(`<span class="monster-name-color">${monsterToOffer.name}</span> が仲間になりたそうにこちらを見ているよ！<br>
-                ( ${monsterCoinHtml} )`);
+    logMessage(`<span class="monster-name-color">${monsterToOffer.name}</span> が仲間になりたそうにこちらを見ているよ！`);
     displayGuideMessage('ミルクで勧誘');
 
-    const actionArea = document.getElementById('action-area');
-
-    [monsterToOffer].forEach((enemy, index) => {
-        const button = document.createElement('button');
-        button.className = 'choice-button';
-        // ここを修正: モン娘の名前と硬貨の表示を画像に置き換える
-        const imageUrl = imagePaths[enemy.name] || './image/default.png';
-        button.innerHTML = `<img src="${imageUrl}" alt="${enemy.name}" class="monster-image">`;
-        button.dataset.monsterName = enemy.name;
-        button.dataset.value = enemy.name; // クリックされたモン娘の名前を返すようにする
-        actionArea.appendChild(button);
-
-        // モン娘全体のツールチップイベントリスナーをボタンに直接付与
-        button.addEventListener('mouseover', (event) => showMonsterTooltip(enemy, event, coinAttributesMap));
-        button.addEventListener('mouseout', hideMonsterTooltip);
-
-    });
-    const skipButton = document.createElement('button');
-    skipButton.innerText = "断る";
-    skipButton.dataset.value = 'skip';
-    actionArea.appendChild(skipButton);
+    // createButtons関数に渡すボタンデータの配列を構築
+    const recruitButtons = [{
+        id: monsterToOffer.name,
+        text: `<img src="${imagePaths[monsterToOffer.name] || './image/default.png'}" alt="${monsterToOffer.name}" class="monster-image">`,
+        className: 'choice-button',
+        monster: monsterToOffer // ツールチップのためにモンスターオブジェクトを渡す
+    }];
+    recruitButtons.push({ id: 'skip', text: '断る', className: 'action-button' });
 
     while (true) {
+        createButtons(recruitButtons); // uiManagerのcreateButtonsを使用してボタンを生成
         const choice = await waitForButtonClick();
         if (choice === 'skip') {
             playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
@@ -1083,16 +1033,16 @@ async function handleFoodSacrificeEvent() {
 
     const foodCost = GAME_CONSTANTS.TRADE_FOOD_INITIAL_COST + game.tradeCountByFood * GAME_CONSTANTS.TRADE_FOOD_SCALING_COST;
 
-    const actionArea = document.getElementById('action-area');
-    const sacrificeButton = document.createElement('button');
-    sacrificeButton.innerText = `神様に食料を捧げる(${foodCost})`;
-    sacrificeButton.dataset.value = 'sacrifice';
-    actionArea.appendChild(sacrificeButton);
-
-    const skipEventButton = document.createElement('button');
-    skipEventButton.innerText = `また今度`;
-    skipEventButton.dataset.value = 'skipEvent';
-    actionArea.appendChild(skipEventButton);
+    const sacrificeButtons = [{
+        id: 'sacrifice',
+        text: `神様に食料を捧げる(${foodCost})`,
+        className: 'action-button'
+    }, {
+        id: 'skipEvent',
+        text: `また今度`,
+        className: 'action-button'
+    }];
+    createButtons(sacrificeButtons); // uiManagerのcreateButtonsを使用してボタンを生成
 
     while (true) {
         const initialChoice = await waitForButtonClick();
@@ -1109,7 +1059,9 @@ async function handleFoodSacrificeEvent() {
                 // NGの効果音を再生
                 playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
                 displayGuideMessage('食料不足');
-                break;
+                // 食料が足りない場合はボタンを再表示して選択を促す
+                createButtons(sacrificeButtons);
+                continue; // ループを続行して再入力を待つ
             }
 
             playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
@@ -1125,16 +1077,12 @@ async function handleFoodSacrificeEvent() {
             }
 
             displayGuideMessage('硬貨選択');
-            // actionArea is already cleared by previous clearActionArea()
-            chosenCoins.forEach((coin, index) => {
-                const button = document.createElement('button');
-                button.className = 'choice-button';
-                // createCoinTooltipHtml を呼び出す際に、人数カウントフラグをtrueに設定
-                const coinHtml = createCoinTooltipHtml(coin.id, coinAttributesMap, false, 1, true); 
-                button.innerHTML = `${coinHtml}`;
-                button.dataset.value = index.toString();
-                actionArea.appendChild(button);
-            });
+            const coinChoiceButtons = chosenCoins.map((coin, index) => ({
+                id: index.toString(),
+                text: createCoinTooltipHtml(coin.id, coinAttributesMap, false, 1, true),
+                className: 'choice-button'
+            }));
+            createButtons(coinChoiceButtons); // uiManagerのcreateButtonsを使用してボタンを生成
 
             const coinChoice = await waitForButtonClick();
             hideCoinTooltip(); // Tooltip hidden regardless of user choice
@@ -1152,11 +1100,10 @@ async function handleFoodSacrificeEvent() {
             playSfx("寵愛").catch(e => console.error("効果音の再生に失敗しました:", e));
 
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+            break; // 正常に選択・処理が完了したらループを抜ける
         }
-        clearActionArea();
-
-        break;
     }
+    clearActionArea(); // ループを抜けた後もクリア
 }
 
 /**
@@ -1168,18 +1115,16 @@ async function handleMilkPartyEvent() {
         logMessage(`<br><div id="game-messages-phase">--- ミルクパーティ ---</div>`);
         displayGuideMessage('ミルクパーティ');
 
-        const actionArea = document.getElementById('action-area');
-        clearActionArea();
-
-        const strengthenButton = document.createElement('button');
-        strengthenButton.innerText = `仲間全員を強化する(ミルク${game.party.length}杯)`;
-        strengthenButton.dataset.value = 'strengthen';
-        actionArea.appendChild(strengthenButton);
-
-        const skipButton = document.createElement('button');
-        skipButton.innerText = 'やめておく';
-        skipButton.dataset.value = 'skip_strengthen';
-        actionArea.appendChild(skipButton);
+        const partyButtons = [{
+            id: 'strengthen',
+            text: `仲間全員を強化する(ミルク${game.party.length}杯)`,
+            className: 'action-button'
+        }, {
+            id: 'skip_strengthen',
+            text: 'やめておく',
+            className: 'action-button'
+        }];
+        createButtons(partyButtons); // uiManagerのcreateButtonsを使用してボタンを生成
 
         const choice = await waitForButtonClick();
         clearActionArea();
@@ -1311,14 +1256,14 @@ async function conductCamp(expeditionParty, currentArea) {
             game.food = 0; // 食料を最低値に回復
             logMessage(`食料が尽きたけど、仲間モン娘 ${milkCost} 人にミルクを支払って冒険を続行だ！`);
             updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
-            const actionArea = document.getElementById('action-area');
-            if (actionArea) actionArea.innerHTML = '<button data-value="continue-after-milk">続行</button>';
+            // uiManagerのcreateButtons関数を使用してボタンを生成
+            createButtons([{ id: 'continue-after-milk', text: '続行', className: 'action-button' }]);
             await waitForButtonClick();
             return 'recovered'; // ゲーム続行
         } else {
             logMessage("食料もミルクも尽きちゃった。");
-            const actionArea = document.getElementById('action-area');
-            if (actionArea) actionArea.innerHTML = '<button data-value="gameover-confirm">あらら</button>';
+            // uiManagerのcreateButtons関数を使用してボタンを生成
+            createButtons([{ id: 'gameover-confirm', text: 'あらら', className: 'action-button' }]);
             await waitForButtonClick();
             return false; // ゲームオーバー
         }
@@ -1331,7 +1276,6 @@ async function conductCamp(expeditionParty, currentArea) {
  * @param {boolean} isCleared - ゲームがクリアされたかどうか。
  */
 function endGame(isCleared) {
-    stopMusic(); // ゲーム終了時に音楽を停止
     clearActionArea();
     toggleInitialSetupArea(true); // 初期セットアップエリアを再表示
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを初期状態にリセット
@@ -1366,6 +1310,8 @@ function endGame(isCleared) {
         }
 
     } else {
+        stopMusic();
+
         displayGuideMessage('ハッピーエンド');
 
         // ハッピーエンドの効果音を再生
@@ -1373,8 +1319,8 @@ function endGame(isCleared) {
 
         logMessage("おじさんはモン娘達に食べられてしまいました。");
     }
-    const actionArea = document.getElementById('action-area');
-    if (actionArea) actionArea.innerHTML = '<button data-value="restart">ゲームを最初からやり直す</button>';
+    // uiManagerのcreateButtons関数を使用してボタンを生成
+    createButtons([{ id: 'restart', text: 'ゲームを最初からやり直す', className: 'action-button' }]);
     waitForButtonClick().then(action => {
         if (action === 'restart') {
             resetGameToInitialState();
@@ -1521,10 +1467,8 @@ async function gameLoop() {
 
             // イベントフェーズに入る前にワンクッション置く
             game.currentPhase = 'campPreparation';
-            const actionArea = document.getElementById('action-area');
-            if (actionArea) {
-                actionArea.innerHTML = '<button id="conduct-camp-button" data-value="conduct-camp">次へ</button>';
-            }
+            // uiManagerのcreateButtons関数を使用してボタンを生成
+            createButtons([{ id: 'conduct-camp', text: '次へ', className: 'action-button' }]);
             await waitForButtonClick();
 
             showSpeechBubble(restingParty, '雑談', random);
@@ -1567,10 +1511,8 @@ async function gameLoop() {
 
         // 野営フェーズに入る前にワンクッション置く
         game.currentPhase = 'campPreparation';
-        const actionArea = document.getElementById('action-area');
-        if (actionArea) {
-            actionArea.innerHTML = '<button id="conduct-camp-button" data-value="conduct-camp">野営する</button>';
-        }
+        // uiManagerのcreateButtons関数を使用してボタンを生成
+        createButtons([{ id: 'conduct-camp', text: '野営する', className: 'action-button' }]);
         await waitForButtonClick();
 
         let campResult = await conductCamp(expeditionParty, currentArea);
@@ -1586,8 +1528,8 @@ async function gameLoop() {
         }
 
         if (game.days < GAME_CONSTANTS.MAX_DAYS && game.food >= 0) { // MAX_DAYSの前日までは次の日へ進むボタン
-            const actionArea = document.getElementById('action-area');
-            if (actionArea) actionArea.innerHTML = '<button id="next-day-button" data-value="next-day">次の日へ</button>';
+            // uiManagerのcreateButtons関数を使用してボタンを生成
+            createButtons([{ id: 'next-day', text: '次の日へ', className: 'action-button' }]);
             await waitForButtonClick();
         }
     }
@@ -1683,9 +1625,10 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
     const preloadedAssets = await preloadAllAssets(audioContext, updateOverallProgress);
     imagePaths = preloadedAssets.imagePaths;
     audioBuffers = preloadedAssets.audioBuffers;
-    
-    // uiManagerとmusicManagerにプリロードされたパスとバッファを渡す
+
+    // UI Managerに画像パスをセット
     setImagePaths(imagePaths);
+    // Music Managerにオーディオバッファをセット
     setMusicAudioBuffers(audioBuffers); // musicManager.js の setAudioBuffers を呼び出す
     await initMusicPlayer(audioContext, preloadedAssets.musicPaths, preloadedAssets.soundPaths); // musicManagerの初期化にaudioContextとpathsを渡す
 

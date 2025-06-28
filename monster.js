@@ -15,7 +15,7 @@ export class Monster {
      * @param {string[]} coinAttributes - モン娘が持つ先天的な硬貨属性の配列。
      * @param {number} upkeep - モン娘の食費。
      * @param {boolean} hasBeenSentToBattle - ボス戦などで一度派遣されたかどうか。
-     * @param {string} talker - モン娘の話し方タイプ（例: '真面目', '元気'）。
+     * @param {string} talker - モン娘の話し方タイプ（例: '真面目な', '元気な'）。
      */
     constructor(name, coinAttributes, upkeep = 0, hasBeenSentToBattle = false, talker = 'none') {
         this.name = name;

@@ -75,7 +75,8 @@ export async function playMusic(name) {
 
     // 現在再生中の音楽があれば停止
     if (currentSource) {
-        stopMusic();
+        // フェードアウトしてから新しい音楽を再生
+        await stopMusic(); // フェードアウトを待つ
     }
 
     const musicInfo = musicPaths[name];
@@ -117,19 +118,44 @@ export async function playMusic(name) {
 
 /**
  * 現在再生中の音楽を停止します。
+ * @param {boolean} [fadeOut=false] - trueの場合、フェードアウトします。
+ * @returns {Promise<void>} フェードアウトが完了したときに解決されるPromise。
  */
-export function stopMusic() {
-    if (currentSource) {
-        try {
-            // フェードアウトは実装しない。すぐに停止。
-            currentSource.stop();
-            console.log("Music stopped."); // Debug log
-        } catch (error) {
-            console.warn("Error stopping current music source (may already be stopped):", error);
-        } finally {
-            currentSource = null;
+export function stopMusic(fadeOut = false) {
+    return new Promise((resolve) => {
+        if (!currentSource) {
+            resolve();
+            return;
         }
-    }
+
+        if (fadeOut && musicGainNode) {
+            const fadeDuration = 2; // 2秒
+            const currentTime = audioContext.currentTime;
+            musicGainNode.gain.linearRampToValueAtTime(0.0001, currentTime + fadeDuration); // 0にするとクリックノイズが発生する可能性があるので、非常に小さい値に設定
+
+            currentSource.onended = () => {
+                console.log("Music stopped after fade out.");
+                currentSource.disconnect();
+                currentSource = null;
+                // フェードアウト後に元の音量に戻す（次の曲再生時に影響しないように）
+                musicGainNode.gain.setValueAtTime(parseFloat(document.getElementById('music-volume').value) / 10, audioContext.currentTime);
+                resolve();
+            };
+
+            // フェードアウトの終了時間で停止をスケジュール
+            currentSource.stop(currentTime + fadeDuration);
+        } else {
+            try {
+                currentSource.stop();
+                console.log("Music stopped immediately.");
+            } catch (error) {
+                console.warn("Error stopping current music source (may already be stopped):", error);
+            } finally {
+                currentSource = null;
+                resolve();
+            }
+        }
+    });
 }
 
 /**
