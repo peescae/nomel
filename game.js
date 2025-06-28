@@ -1200,14 +1200,14 @@ async function conductCamp(expeditionParty, currentArea) {
     game.upkeep = game.party.reduce((total, monster) => total + monster.upkeep, 0);
     let totalFoodConsumption = game.upkeep + game.battleAllowance;
 
+    logMessage(`仲間の食費: ${game.upkeep}`);
+    logMessage(`総戦闘手当: ${game.battleAllowance}`);
+    logMessage(`合計食料消費量: ${totalFoodConsumption}`);
+
     if (game.playerLife.name === '農家') {
         logMessage(`農家の力で効率良く食料を消費したよ。合計食料消費量: ${totalFoodConsumption} → ${Math.floor(totalFoodConsumption * GAME_CONSTANTS.FARMER_SAVINGS)}`);
         totalFoodConsumption = Math.floor(totalFoodConsumption * GAME_CONSTANTS.FARMER_SAVINGS);
     }
-
-    logMessage(`仲間の食費: ${game.upkeep}`);
-    logMessage(`総戦闘手当: ${game.battleAllowance}`);
-    logMessage(`合計食料消費量: ${totalFoodConsumption}`);
 
     game.food -= totalFoodConsumption;
     game.battleAllowance = 0; // 戦闘手当をリセット
