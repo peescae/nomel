@@ -29,6 +29,7 @@ import { initMusicPlayer, playMusic, playSfx, stopMusic, setAudioBuffers as setM
 import { displayGuideMessage } from './helpUI.js';
 import { showSpeechBubble } from './speechBubbleManager.js';
 import { preloadAllAssets } from './preloadManager.js';
+import { initializeMonsterGuide } from './guideUI.js'; // guideUI.jsからインポート
 
 // coinAttributesMapをグローバルスコープで利用可能にする
 // HTMLのonmouseover属性などから直接呼び出すため
@@ -1631,6 +1632,11 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
     // Music Managerにオーディオバッファをセット
     setMusicAudioBuffers(audioBuffers); // musicManager.js の setAudioBuffers を呼び出す
     await initMusicPlayer(audioContext, preloadedAssets.musicPaths, preloadedAssets.soundPaths); // musicManagerの初期化にaudioContextとpathsを渡す
+
+    // monsterGuide.jsonを読み込む
+    const monsterGuideJson = await fetch('./monsterGuide.json').then(res => res.json()).catch(e => { console.error("Error loading monsterGuide.json:", e); return {}; });
+    // guideUIの初期化
+    initializeMonsterGuide(monsterGuideJson, imagePaths);
 
     console.log('Asset preloading complete. Game is ready to start.');
 

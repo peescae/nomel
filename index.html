@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>逆レモン</title>
         <link rel="stylesheet" href="style.css">
-        <link rel="stylesheet" href="delicacyHelpUI.css"> <!-- 新しいCSSファイルをリンク -->
+        <link rel="stylesheet" href="guideUI.css"> <!-- delicacyHelpUI.css から guideUI.css に変更 -->
         <link rel="icon" href="./image/ファビコン.ico">
     </head>
     <body>
@@ -13,9 +13,7 @@
         <div id="loading-overlay">
             <div id="loading-spinner"></div>
             <div id="loading-text">ロード中...</div>
-            <div id="progress-bar-container">
-                <div id="progress-bar-fill"></div>
-            </div>
+            <div id="progress-bar-fill"></div>
             <div id="progress-percentage">0%</div>
         </div>
 
@@ -43,9 +41,9 @@
                             <div style="display: inline-block; margin: 0 1px; font-size: 0.8em;">
                                 <button id="toggle-coin-display-button" class="action-button">硬貨ON</button>
                             </div>
-                            <!-- 珍味ヘルプボタンの追加 -->
+                            <!-- モン娘図鑑ボタンの追加 (珍味ヘルプボタンと統合) -->
                             <div style="display: inline-block; margin: 0 1px; font-size: 0.8em;">
-                                <button id="delicacy-help-button" class="action-button">珍味</button>
+                                <button id="monster-guide-button" class="action-button">図鑑</button>
                             </div>
                         </div>
 
@@ -274,17 +272,49 @@
             </div>
         </div>
 
-        <!-- 新しい珍味ヘルプウィンドウのオーバーレイ -->
-        <div id="delicacy-help-overlay" class="modal-overlay">
-            <div id="delicacy-help-modal" class="modal-content">
-                <h3 id="delicacy-help-modal-title">珍味</h3>
-                <div id="delicacy-help-content" class="modal-log-content">
-                    <!-- 珍味の情報がここに動的に追加されます -->
-                    <p>探索で特定のモン娘が特定の地形を<br>探索すると珍味が見つかるよ！</p>
-                    <p>食べるとミルクが生産されるよ！</p>
-                    <div id="delicacy-list"></div>
+        <!-- 珍味ヘルプとモン娘図鑑を統合した新しいオーバーレイ -->
+        <div id="guide-overlay" class="modal-overlay">
+            <div id="guide-modal" class="modal-content">
+                <div class="tab-buttons">
+                    <button id="tab-delicacy" class="tab-button">珍味</button>
+                    <button id="tab-monster-guide" class="tab-button active">モン娘図鑑</button>
+                    <button id="tab-boss-guide" class="tab-button">ボス図鑑</button> <!-- 新しいボス図鑑タブを追加 -->
                 </div>
-                <button id="delicacy-modal-close-button" class="modal-close-button">閉じる</button>
+                <h3 id="guide-modal-title">モン娘図鑑</h3>
+                <div id="guide-content" class="modal-log-content">
+                    <!-- コンテンツはJSによって動的に切り替えられます -->
+                    <div id="delicacy-content" style="display: none;">
+                        <p>探索で特定のモン娘が特定の地形を<br>探索すると珍味が見つかるよ！</p>
+                        <p>食べるとミルクが生産されるよ！</p>
+                        <div id="delicacy-list"></div>
+                    </div>
+                    <div id="monster-guide-content">
+                        <div class="sort-controls">
+                            <label for="sort-by">ソート順:</label>
+                            <select id="sort-by">
+                                <option value="name">種族名</option>
+                                <option value="danger">危険度</option>
+                                <option value="species">大種族</option>
+                            </select>
+                            <button id="sort-order-toggle">昇順</button>
+                        </div>
+                        <div id="monster-list"></div>
+                    </div>
+                    <!-- 新しいボス図鑑コンテンツを追加 -->
+                    <div id="boss-guide-content" style="display: none;">
+                        <div class="sort-controls">
+                            <label for="boss-sort-by">ソート順:</label>
+                            <select id="boss-sort-by">
+                                <option value="name">種族名</option>
+                                <option value="danger">危険度</option>
+                                <option value="species">大種族</option>
+                            </select>
+                            <button id="boss-sort-order-toggle">昇順</button>
+                        </div>
+                        <div id="boss-monster-list"></div>
+                    </div>
+                </div>
+                <button id="guide-modal-close-button" class="modal-close-button">閉じる</button>
             </div>
         </div>
 
@@ -297,8 +327,8 @@
         <script src="battle.js" type="module"></script>
         <script src="helpUI.js" type="module"></script>
         <script src="musicManager.js" type="module"></script>
-        <script src="delicacyHelpUI.js" type="module"></script> <!-- 新しいJSファイルをリンク -->
-        <script src="preloadManager.js" type="module"></script> <!-- preloadManager.js を追加 -->
-        <script src="game.js" type="module"></script> <!-- game.js を preloadManager.js の後に移動 -->
+        <script src="guideUI.js" type="module"></script> <!-- delicacyHelpUI.js から guideUI.js に変更 -->
+        <script src="preloadManager.js" type="module"></script>
+        <script src="game.js" type="module"></script>
     </body>
 </html>

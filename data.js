@@ -34,7 +34,7 @@ export const coinAttributesMap = [
 // モン娘のテンプレート定義
 // 各モン娘の名前、所持硬貨、食費を含む。
 export const monsterTemplates = [
-    { name: 'インプ', coins: ['sky', 'dark', 'magic'], upkeep: 3, talker: ['元気な', '荒っぽい'] },
+    { name: 'インプ', coins: ['sky', 'dark', 'magic'], upkeep: 3, talker: ['真面目な', '元気な', '真面目で元気な', '荒っぽい'] },
     { name: 'ゴブリン', coins: ['plain', 'forest', 'dark'], upkeep: 3, talker: ['元気な', '荒っぽい'] },
     { name: 'コロポックル', coins: ['forest', 'snow', 'fishing'], upkeep: 3, talker: ['真面目な', '元気な', '真面目で元気な', 'ゆるい'] },
     { name: 'フェアリー', coins: ['forest', 'flower', 'sky'], upkeep: 3, talker: ['元気な', 'ゆるい'] },
