@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>逆レモン</title>
         <link rel="stylesheet" href="style.css">
-        <link rel="stylesheet" href="guideUI.css"> <!-- delicacyHelpUI.css から guideUI.css に変更 -->
+        <link rel="stylesheet" href="guideUI.css">
         <link rel="icon" href="./image/ファビコン.ico">
     </head>
     <body>
@@ -65,8 +65,8 @@
 
                 <div id="game-info">
                     <p><span id="days-display">0</span>日目</p>
-                    <p>ミルク: <span id="milk-display">0</span></p>
-                    <p>食料: <span id="food-display">0</span></p>
+                    <p>ミルク: <span id="milk-display">0</span> <span id="estimated-milk-gain-display" class="estimated-gain-display"></span></p>
+                    <p>食料: <span id="food-display">0</span> <span id="estimated-food-gain-display" class="estimated-gain-display"></span></p>
                     <p>現在の地形: <span id="current-area-display"></span> <span id="current-area-coins-display"></span></p>
                 </div>
 
@@ -240,8 +240,14 @@
 
                     <h4>利用素材</h4>
                     <ul>
-                        <li><strong>魔王魂</strong> https://maou.audio/</li>
-                        <li><strong>Game-icons.net</strong> https://game-icons.net/</li>
+                        <li><strong>魔王魂</strong> <a href="https://maou.audio/" target="_blank">https://maou.audio/</a></li>
+                        <li><strong>Game-icons.net</strong> <a href="https://game-icons.net/" target="_blank">https://game-icons.net/</a></li>
+                    </ul>
+
+                    <h4>スペシャルサンクス</h4>
+                    <ul>
+                        <li><strong>しろくま</strong> <a href="https://x.com/shirokuma_ikki" target="_blank">https://x.com/shirokuma_ikki</a></li>
+                        <li><strong>木下下井</strong> <a href="https://x.com/kinoshitashitai" target="_blank">https://x.com/zn_105</a> / <a href="https://x.com/zn_105" target="_blank">https://x.com/zn_105</a></li>
                     </ul>
 
                     <h4>アップデート</h4>
@@ -265,6 +271,10 @@
                             硬貨の表示を調整<br>
                             相変わらず弱いラスボス戦を若干テコ入れ<br>
                             帝国の侵略兵器の種類を追加（タタリモッケ、ヒノクルマ）
+                        </li>
+                        <li>
+                            <strong>2025/07/05 Ver.1.6</strong> モン娘図鑑・ボス図鑑を実装<br>
+                            探索メンバー選択時に予想ミルク獲得量を表示
                         </li>
                     </ul>
                 </div>
@@ -292,6 +302,7 @@
                         <div class="sort-controls">
                             <label for="sort-by">ソート順:</label>
                             <select id="sort-by">
+                                <option value="coins">硬貨</option>
                                 <option value="name">種族名</option>
                                 <option value="danger">危険度</option>
                                 <option value="species">大種族</option>
@@ -305,6 +316,7 @@
                         <div class="sort-controls">
                             <label for="boss-sort-by">ソート順:</label>
                             <select id="boss-sort-by">
+                                <option value="coins">硬貨</option>
                                 <option value="name">種族名</option>
                                 <option value="danger">危険度</option>
                                 <option value="species">大種族</option>
@@ -327,7 +339,7 @@
         <script src="battle.js" type="module"></script>
         <script src="helpUI.js" type="module"></script>
         <script src="musicManager.js" type="module"></script>
-        <script src="guideUI.js" type="module"></script> <!-- delicacyHelpUI.js から guideUI.js に変更 -->
+        <script src="guideUI.js" type="module"></script>
         <script src="preloadManager.js" type="module"></script>
         <script src="game.js" type="module"></script>
     </body>

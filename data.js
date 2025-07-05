@@ -237,7 +237,6 @@ export const GAME_CONSTANTS = {
     ENEMY_COUNT_SCALING_DAYS: 2, // 敵の出現数スケーリングの日間隔
     ENEMY_MIN_COIN_COUNT: 3, // 敵の硬貨の最小枚数
     AREA_COIN_SCALING_DAYS: 4, // 地形の硬貨枚数のスケーリングの日間隔
-    DELICACY_DROP_CHANCE: 1.0, // 珍味の獲得確率
     COIN_TAIL_OPACITY: 0.2, // 硬貨が裏面の場合の透過率
     FARMER_SAVINGS: 0.8, // 農家が節約する食料の消費倍率
     SELECT_AREA_SIZE: 3, // 探索エリアの選択肢の数

@@ -14,6 +14,54 @@ body {
     align-items: flex-start; /* 画面上部に固定 */
 }
 
+a {
+    color: #61dafb;
+}
+
+/* ベーススタイル */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+}
+ 
+/* Track: Chrome, Safari, Opera, Edge Chromium */
+input[type="range"]::-webkit-slider-runnable-track {
+  background: #045b8d;
+  height: 8px;
+  border-radius: 8px;
+}
+ 
+/* Thumb: Chrome, Safari, Opera, Edge Chromium */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 20px;
+  width: 20px;
+  margin-top: -6px; /* 位置の調整が必要 */
+  background-color: #4cabe2;
+  border-radius: 50%;
+}
+ 
+/* Track: Firefox */
+input[type="range"]::-moz-range-track {
+  background: #045b8d;
+  height: 8px;
+  border-radius: 8px;
+}
+ 
+/* Thumb: Firefox */
+input[type="range"]::-moz-range-thumb {
+  border: none;
+  height: 20px;
+  width: 20px;
+  background-color: #4cabe2;
+  border-radius: 50%;
+}
+
 #game-container {
     background-color: #3b3f47;
     border-radius: 10px;

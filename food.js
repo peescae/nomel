@@ -1,7 +1,7 @@
 // food.js
 
 import { Monster } from './monster.js';
-import { GAME_CONSTANTS } from './data.js';
+import { GAME_CONSTANTS, delicacies } from './data.js';
 
 /**
  * 予想食料獲得量を計算し、ゲーム状態を更新する。
@@ -44,4 +44,34 @@ export function updateEstimatedFoodGain(game, expeditionParty, currentArea) {
     }
     game.estimatedFoodGain = estimatedFoodGained; // gameオブジェクトの値を更新
     console.log("Calculated game.estimatedFoodGain:", game.estimatedFoodGain);
+}
+
+/**
+ * 予想ミルク獲得量を計算し、ゲーム状態を更新する。
+ * @param {object} game - 現在のゲーム状態オブジェクト。
+ * @param {Monster[]} expeditionParty - 派遣されるモン娘の配列。
+ * @param {object} currentArea - 現在の地形情報。
+ * @returns {number} 予想ミルク獲得量。
+ */
+export function calculateEstimatedMilkGain(game, expeditionParty, currentArea) {
+    console.log("calculateEstimatedMilkGain called.");
+    let estimatedMilkGained = 0;
+
+    if (currentArea && expeditionParty) {
+        for (const member of expeditionParty) {
+            for (const delicacy of delicacies) {
+                // 探索モン娘の属性と珍味のexplorerCoinAttributesに共通の属性があるかチェック
+                const monsterAttributeMatch = delicacy.explorerCoinAttributes.every(attr => member.allCoins.includes(attr));
+                // 探索エリアの属性と珍味のareaCoinAttributesに共通の属性があるかチェック
+                const areaAttributeMatch = delicacy.areaCoinAttributes.every(attr => currentArea.coinAttributes.includes(attr));
+
+                // 珍味の獲得確率が100%なので、条件が合致すればミルクを獲得とみなす
+                if (monsterAttributeMatch && areaAttributeMatch) {
+                    estimatedMilkGained += delicacy.milkConversion;
+                    break;
+                }
+            }
+        }
+    }
+    return estimatedMilkGained;
 }

@@ -11,9 +11,9 @@ import { createCoinTooltipHtml } from './uiManager.js'; // uiManagerから関数
 let isDraggingGuide = false;
 let guideOffsetX, guideOffsetY;
 let guideModal; // モーダル要素を保持する変数
-let currentSortKey = 'name'; // 現在のソートキー (モン娘図鑑用)
+let currentSortKey = 'coins'; // 初期ソートキーを'coins'に変更 (モン娘図鑑用)
 let sortAscending = true; // ソート順 (true: 昇順, false: 降順) (モン娘図鑑用)
-let bossSortKey = 'name'; // 現在のソートキー (ボス図鑑用)
+let bossSortKey = 'coins'; // 初期ソートキーを'coins'に変更 (ボス図鑑用)
 let bossSortAscending = true; // ソート順 (true: 昇順, false: 降順) (ボス図鑑用)
 
 let monsterGuideData = []; // モン娘図鑑のデータを保持 (enemy属性なし)
@@ -39,18 +39,6 @@ function getCoinAttributeName(coinId, map) {
 export function initializeMonsterGuide(monsterGuideJson, imagePaths) {
     monsterGuideData = []; // データをクリア
     bossGuideData = []; // データをクリア
-
-    // FINAL_BOSS_ENCOUNTERS に含まれる全てのモン娘の名前をセットに格納
-    // このセットは、特定のモン娘がボス戦に登場するかどうかを識別するために残しますが、
-    // 図鑑への振り分けは'enemy'属性のみで行います。
-    let finalBossMonsterNames = new Set();
-    for (const areaId in FINAL_BOSS_ENCOUNTERS) {
-        for (const encounterWave of FINAL_BOSS_ENCOUNTERS[areaId]) {
-            for (const enemyData of encounterWave) {
-                finalBossMonsterNames.add(enemyData.name);
-            }
-        }
-    }
 
     monsterTemplates.forEach(template => {
         const guideInfo = monsterGuideJson[template.name] || {};
@@ -102,6 +90,9 @@ function renderMonsterGuide() {
         } else if (currentSortKey === 'species') {
             valA = a.species;
             valB = b.species;
+        } else if (currentSortKey === 'coins') { // 硬貨の枚数でソート
+            valA = a.coins.length;
+            valB = b.coins.length;
         }
 
         if (valA < valB) return sortAscending ? -1 : 1;
@@ -156,6 +147,9 @@ function renderBossGuide() {
         } else if (bossSortKey === 'species') {
             valA = a.species;
             valB = b.species;
+        } else if (bossSortKey === 'coins') { // 硬貨の枚数でソート
+            valA = a.coins.length;
+            valB = b.coins.length;
         }
 
         if (valA < valB) return bossSortAscending ? -1 : 1;

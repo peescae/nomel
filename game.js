@@ -24,7 +24,7 @@ import {
     getGroupedCoinDisplay
 } from './uiManager.js';
 import { conductFight } from './battle.js';
-import { updateEstimatedFoodGain } from './food.js';
+import { updateEstimatedFoodGain, calculateEstimatedMilkGain } from './food.js'; // calculateEstimatedMilkGainをインポート
 import { initMusicPlayer, playMusic, playSfx, stopMusic, setAudioBuffers as setMusicAudioBuffers } from './musicManager.js';
 import { displayGuideMessage } from './helpUI.js';
 import { showSpeechBubble } from './speechBubbleManager.js';
@@ -63,6 +63,7 @@ const game = {
     currentArea: null, // 現在の地形情報
     upkeep: 0, // 食費
     estimatedFoodGain: 0, // 予想食料獲得量
+    estimatedMilkGain: 0, // 予想ミルク獲得量を追加
     expeditionParty: [], // 派遣されるモン娘の配列 (珍味判定用)
     favour: [], // 神の寵愛で得た硬貨の配列
     playerLife: null, // プレイヤーの生い立ち
@@ -201,6 +202,7 @@ async function selectExplorationArea() {
 
     clearActionArea(); // このフェーズの開始時にactionAreaをクリア
     game.estimatedFoodGain = 0; // エリア選択時は予想食料をリセット
+    game.estimatedMilkGain = 0; // エリア選択時は予想ミルクをリセット
     updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して表示を反映
 
     const areaButtons = areaChoices.map((area, index) => {
@@ -295,7 +297,9 @@ async function sendMonstersOnExpedition(currentArea) {
 
                 // UIを即時更新
                 updateEstimatedFoodGain(game, expeditionParty, currentArea); // 直接呼び出す
+                game.estimatedMilkGain = calculateEstimatedMilkGain(game, expeditionParty, currentArea); // 予想ミルク獲得量を計算
                 console.log(`After updateEstimatedFoodGain - game.estimatedFoodGain: ${game.estimatedFoodGain}`);
+                console.log(`After calculateEstimatedMilkGain - game.estimatedMilkGain: ${game.estimatedMilkGain}`); // デバッグログ
                 updateUI(game, coinAttributesMap, expeditionParty, currentArea, true, game.party, GAME_CONSTANTS.MAX_PARTY_SIZE); // これが updateEstimatedFoodGain を呼び出す
             }
         };
@@ -324,6 +328,7 @@ async function sendMonstersOnExpedition(currentArea) {
                 clearActionArea(); // ボタンをクリア
                 game.currentPhase = 'idle'; // フェーズをアイドルに戻す
                 game.estimatedFoodGain = 0; // 派遣決定後、予想食料獲得量をリセット
+                game.estimatedMilkGain = 0; // 派遣決定後、予想ミルク獲得量をリセット
                 updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを通常状態に戻す
                 resolve({ expeditionParty, restingParty: finalRestingParty });
             }
@@ -1227,13 +1232,11 @@ async function conductCamp(expeditionParty, currentArea) {
             const areaAttributeMatch = delicacy.areaCoinAttributes.every(attr => currentArea.coinAttributes.includes(attr));
 
             if (monsterAttributeMatch && areaAttributeMatch) {
-                if (random() < GAME_CONSTANTS.DELICACY_DROP_CHANCE) {
-                    game.milk += delicacy.milkConversion;
-                    logMessage(`${member.name}が${delicacy.name}を見つけてきたよ！　栄養満点だからおじさんが食べなよ。`);
-                    delicacyFound = true;
-                    updateUI(game, coinAttributesMap, [], currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
-                    break; // この珍味は獲得したので次のモン娘へ
-                }
+                game.milk += delicacy.milkConversion;
+                logMessage(`${member.name}が${delicacy.name}を見つけてきたよ！　栄養満点だからおじさんが食べなよ。`);
+                delicacyFound = true;
+                updateUI(game, coinAttributesMap, [], currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+                break; // この珍味は獲得したので次のモン娘へ
             }
         }
         if (delicacyFound) {
@@ -1554,8 +1557,9 @@ function resetGameToInitialState() {
     game.battleAllowance = 0;
     game.currentSeed = '';
     game.currentArea = null;
-    game.estimatedFoodGain = 0;
-    game.upkeep = 0;
+    game.estimatedFoodGain = 0; // 予想食料獲得量もリセット
+    game.estimatedMilkGain = 0; // 予想ミルク獲得量もリセット
+    game.upkeep = 0; // 食費もリセット
     game.currentPhase = 'initial';
     game.favour = [];
     game.playerLife = null;
@@ -1677,6 +1681,7 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
             game.battleAllowance = 0;
             game.currentArea = null;
             game.estimatedFoodGain = 0; // 予想食料獲得量もリセット
+            game.estimatedMilkGain = 0; // 予想ミルク獲得量もリセット
             game.upkeep = 0; // 食費もリセット
             game.currentPhase = 'initial'; // フェーズを初期状態に戻す
             game.favour = []; // 神の寵愛もリセット

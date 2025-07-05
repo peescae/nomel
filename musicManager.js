@@ -129,7 +129,7 @@ export function stopMusic(fadeOut = false) {
         }
 
         if (fadeOut && musicGainNode) {
-            const fadeDuration = 2; // 2秒
+            const fadeDuration = 1; // 1秒
             const currentTime = audioContext.currentTime;
             musicGainNode.gain.linearRampToValueAtTime(0.0001, currentTime + fadeDuration); // 0にするとクリックノイズが発生する可能性があるので、非常に小さい値に設定
 

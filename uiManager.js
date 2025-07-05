@@ -590,6 +590,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
     const dayDisplay = document.getElementById('days-display'); // idを修正
     const foodDisplay = document.getElementById('food-display');
     const milkDisplay = document.getElementById('milk-display');
+    const estimatedMilkGainDisplay = document.getElementById('estimated-milk-gain-display'); // 新しい要素を取得
     const partySizeDisplay = document.getElementById('party-size-display');
     const seedDisplay = document.getElementById('seed-display');
     const currentAreaDisplay = document.getElementById('current-area-display');
@@ -614,8 +615,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
     }
 
     if (dayDisplay) dayDisplay.innerText = `${gameData.days}`; // gameData.days を使用
-    if (milkDisplay) milkDisplay.innerText = `${gameData.milk}`;
-
+    
     // 食料表示の更新
     if (foodDisplay) {
         // 探索派遣選択フェーズで、かつ予想食料獲得量がある場合（0でない場合）に「+b」形式で表示
@@ -624,6 +624,15 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
         } else {
             // 通常時、または予想食料獲得量が0の場合は通常の食料を表示
             foodDisplay.innerText = `${gameData.food}`;
+        }
+    }
+
+    // ミルク表示の更新
+    if (milkDisplay) {
+        if (gameData.currentPhase === 'expeditionSelection' && gameData.estimatedMilkGain !== 0) {
+            milkDisplay.innerHTML = `${gameData.milk} + <span style="color: #FFD700;">${gameData.estimatedMilkGain}</span>`;
+        } else {
+            milkDisplay.innerText = `${gameData.milk}`;
         }
     }
 
