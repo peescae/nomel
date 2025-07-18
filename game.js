@@ -1,6 +1,6 @@
 // game.js
 
-import { coinAttributesMap, monsterTemplates, areaTypes, GAME_CONSTANTS, delicacies, FINAL_BOSS_ENCOUNTERS, life } from './data.js';
+import { coinAttributesMap, monsterTemplates, areaTypes, GAME_CONSTANTS, delicacies, FINAL_BOSS_ENCOUNTERS, life, dailyCharange } from './data.js';
 import { Monster, generateAreaSpecificEnemies, generateSpecialRaidEnemies, getUniqueRandomMonsters } from './monster.js';
 import { mulberry32 } from './rng.js';
 import {
@@ -21,7 +21,9 @@ import {
     showCoinTooltip,
     setImagePaths,
     createButtons,
-    getGroupedCoinDisplay
+    getGroupedCoinDisplay,
+    showDailyChallengeTooltip,
+    hideDailyChallengeTooltip
 } from './uiManager.js';
 import { conductFight } from './battle.js';
 import { updateEstimatedFoodGain, calculateEstimatedMilkGain } from './food.js'; // calculateEstimatedMilkGainをインポート
@@ -70,6 +72,8 @@ const game = {
     coinSizeLimit: 0, // 硬貨枚数の制限
     tradeCountByFood: 0, // 食料の交換回数
     tradeCountByMilk: 0, // ミルクの交換回数
+    isDailyChallengeMode: false, // 日替わりチャレンジモードかどうか
+    dailyChallenges: [], // 選ばれた日替わりチャレンジ
 };
 // uiManager.js からアクセスできるように game オブジェクトを window に公開
 window.game = game;
@@ -77,6 +81,103 @@ window.game = game;
 let random; // 疑似乱数生成関数
 let imagePaths; // 画像パスを保持する変数
 let audioBuffers; // プリロードされたオーディオバッファを保持する変数
+
+/**
+ * 日付を基にしたシード値を生成する関数。
+ * @returns {string} YYYYMMDD形式のシード値。
+ */
+function getDateSeed() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    return `${year}${month}${day}`;
+}
+
+/**
+ * 日替わりチャレンジを3つ選択する関数。
+ * タイプが重複しないように選出する。
+ * @param {number} seed - 乱数生成のためのシード値。
+ * @returns {Array<Object>} 選ばれた3つの日替わりチャレンジ。
+ */
+function selectDailyChallenges(seed) {
+    const dailyChallengeRandom = mulberry32(seed);
+    const selectedChallenges = [];
+    const usedTypes = new Set();
+    const availableChallenges = [...dailyCharange]; // 元の配列を破壊しないようにコピー
+
+    // 3つのチャレンジを選択
+    while (selectedChallenges.length < 3 && availableChallenges.length > 0) {
+        const randomIndex = Math.floor(dailyChallengeRandom() * availableChallenges.length);
+        const challenge = availableChallenges[randomIndex];
+
+        // タイプの重複をチェック
+        const hasDuplicateType = challenge.type.some(type => usedTypes.has(type));
+
+        if (!hasDuplicateType) {
+            selectedChallenges.push(challenge);
+            challenge.type.forEach(type => usedTypes.add(type));
+            availableChallenges.splice(randomIndex, 1); // 選んだチャレンジはリストから削除
+        } else {
+            // 重複するタイプがある場合は、そのチャレンジを一時的に除外して再試行
+            // ただし、無限ループにならないように、既に選択済みのチャレンジは除外する
+            availableChallenges.splice(randomIndex, 1);
+        }
+    }
+
+    // もし3つ選べなかった場合（例: タイプがすべて重複している場合など）、残りのチャレンジからランダムに追加する
+    while (selectedChallenges.length < 3 && dailyCharange.length > 0) {
+        const randomIndex = Math.floor(dailyChallengeRandom() * dailyCharange.length);
+        const challenge = dailyCharange[randomIndex];
+        if (!selectedChallenges.includes(challenge)) {
+            selectedChallenges.push(challenge);
+        }
+    }
+
+    return selectedChallenges;
+}
+
+/**
+ * 指定された名前の日替わりチャレンジが現在有効かどうかを判定します。
+ * @param {string} challengeName - 検索するチャレンジの名前。
+ * @returns {boolean} 指定されたチャレンジが存在すれば true、そうでなければ false。
+ */
+function isDailyChallengeActive(challengeName) {
+    // game.dailyChallenges 配列が存在し、かつ空でないことを確認
+    if (game.isDailyChallengeMode && game.dailyChallenges && game.dailyChallenges.length > 0) {
+        return game.dailyChallenges.some(challenge => challenge.name === challengeName);
+    }
+    return false; // 配列が存在しないか空の場合は false を返す
+}
+
+/**
+ * モン娘加入フェーズで提示するモン娘のテンプレートを生成する。
+ * @returns {monsterTemplates[]} モン娘のテンプレート
+ */
+function selectOfferMonsterTemplates() {
+    let monsterList;
+    if (isDailyChallengeActive('廃刀令')) {
+        monsterList = monsterTemplates.filter(m =>
+            !game.party.some(p => p.name === m.name) && !m.coins.includes('enemy') && !m.coins.includes('iron') && !m.coins.includes('bow')
+        );
+    }
+    else if (isDailyChallengeActive('渇水')) {
+        monsterList = monsterTemplates.filter(m =>
+            !game.party.some(p => p.name === m.name) && !m.coins.includes('enemy') && !m.coins.includes('water') && !m.coins.includes('snow') && !m.coins.includes('fishing')
+        );
+    }
+    else if (isDailyChallengeActive('大原動機')) {
+        monsterList = monsterTemplates.filter(m =>
+            !game.party.some(p => p.name === m.name) && !m.coins.includes('enemy') && !m.coins.includes('forest')
+        );
+    }
+    else {
+        monsterList = monsterTemplates.filter(m =>
+            !game.party.some(p => p.name === m.name) && !m.coins.includes('enemy')
+        );
+    }
+    return monsterList;
+}
 
 /**
  * １：モン娘の加入フェーズ (ゲーム開始時のみ)。
@@ -90,9 +191,7 @@ async function offerMonstersToJoin() {
 
     let initialChoices = [];
     // 現在パーティにいない、かつ'enemy'属性を持たない全てのモン娘テンプレート
-    let availableTemplatesForOffer = monsterTemplates.filter(m =>
-        !game.party.some(p => p.name === m.name) && !m.coins.includes('enemy')
-    );
+    let availableTemplatesForOffer = selectOfferMonsterTemplates();
 
     // 重み付けを考慮して3体のモン娘を仮選択
     initialChoices = getUniqueRandomMonsters(game, 3, availableTemplatesForOffer, true, 0, game.coinSizeLimit, random);
@@ -119,17 +218,26 @@ async function offerMonstersToJoin() {
     showSpeechBubble([chosenInitialMonster], '加入', random);
     playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
     logMessage(`<span class="monster-name-color">${chosenInitialMonster.name}</span> を雇ったよ！`);
-    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して表示を反映
+    updateUI(game, coinAttributesMap, [], null, false, null); // UIを更新して表示を反映
+
+    // パーティ人数設定
+    let maxPartySize;
+    if (isDailyChallengeActive('新婚旅行')) {
+        maxPartySize = 1;
+    }
+    else if (isDailyChallengeActive('両手に花')) {
+        maxPartySize = 2;
+    }
+    else {
+        maxPartySize = GAME_CONSTANTS.MAX_PARTY_SIZE;
+    }
 
     // 2回目以降の選択: プレイヤーは最大3体までモン娘を加入可能
-    while (game.party.length < GAME_CONSTANTS.MAX_PARTY_SIZE) {
+    while (game.party.length < maxPartySize) {
         displayGuideMessage('モン娘加入フェーズ2人目以降');
 
         let subsequentChoices = [];
-        // 現在パーティにいない、かつ'enemy'属性を持たないモン娘のみを対象とする
-        let currentAvailableTemplates = monsterTemplates.filter(m =>
-            !game.party.some(p => p.name === m.name) && !m.coins.includes('enemy')
-        );
+        let currentAvailableTemplates = selectOfferMonsterTemplates();
 
         // 重み付けを考慮して3体のモン娘を仮選択
         subsequentChoices = getUniqueRandomMonsters(game, 3, currentAvailableTemplates, true, 0, game.coinSizeLimit, random);
@@ -164,13 +272,11 @@ async function offerMonstersToJoin() {
         showSpeechBubble([chosenMonster], '加入', random);
         playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
         logMessage(`<span class="monster-name-color">${chosenMonster.name}</span> を雇ったよ！`);
-        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+        updateUI(game, coinAttributesMap, [], null, false, null);
     }
 
     // MAX_PARTY_SIZEになった時点で自動的に終了メッセージを表示
-    if (game.party.length >= GAME_CONSTANTS.MAX_PARTY_SIZE) {
-        displayGuideMessage('出発');
-    }
+    displayGuideMessage('出発');
 
     // 最終的な「出発」ボタンを表示
     createButtons([{ id: 'continue', text: '出発', className: 'action-button' }]);
@@ -193,17 +299,34 @@ async function selectExplorationArea() {
     const maxAttributesAllowed = 2 + Math.floor(game.days / GAME_CONSTANTS.AREA_COIN_SCALING_DAYS);
 
     // フィルターされた地形リストを作成
-    const availableAreas = areaTypes.filter(area => area.coinAttributes.length <= maxAttributesAllowed);
+    let availableAreas = areaTypes.filter(area => area.coinAttributes.length <= maxAttributesAllowed);
+
+    // 日替わりチャレンジのフィルタリング
+    if (isDailyChallengeActive('廃刀令')) {
+        availableAreas = availableAreas.filter(area => !area.coinAttributes.includes('iron') && !area.coinAttributes.includes('bow'));
+    }
+    else if (isDailyChallengeActive('渇水')) {
+        availableAreas = availableAreas.filter(area => !area.coinAttributes.includes('water') && !area.coinAttributes.includes('snow') && !area.coinAttributes.includes('fishing'));
+    }
+    else if (isDailyChallengeActive('大原動機')) {
+        availableAreas = availableAreas.filter(area => !area.coinAttributes.includes('forest'));
+    }
+    else if (isDailyChallengeActive('奈落')) {
+        availableAreas = availableAreas.filter(area => area.coinAttributes.includes('dark'));
+    }
 
     const areaChoices = [];
     // フィルターされた地形からランダムに3つ（またはそれ以下）を選択
     const shuffledFilteredAreas = [...availableAreas].sort(() => 0.5 - random());
-    areaChoices.push(...shuffledFilteredAreas.slice(0, game.playerLife.name === '冒険家' ? GAME_CONSTANTS.SELECT_AREA_ADVENTURER : GAME_CONSTANTS.SELECT_AREA_SIZE));
+    let numberOfOptions = GAME_CONSTANTS.SELECT_AREA_SIZE;
+    if (game.playerLife.name === '冒険家') numberOfOptions = GAME_CONSTANTS.SELECT_AREA_ADVENTURER;
+    if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士') || isDailyChallengeActive('縄張り')) numberOfOptions++;
+    areaChoices.push(...shuffledFilteredAreas.slice(0, numberOfOptions));
 
     clearActionArea(); // このフェーズの開始時にactionAreaをクリア
     game.estimatedFoodGain = 0; // エリア選択時は予想食料をリセット
     game.estimatedMilkGain = 0; // エリア選択時は予想ミルクをリセット
-    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して表示を反映
+    updateUI(game, coinAttributesMap, [], null, false, null); // UIを更新して表示を反映
 
     const areaButtons = areaChoices.map((area, index) => {
         // 硬貨属性をカウントし、まとめた表示形式にする
@@ -234,7 +357,7 @@ async function selectExplorationArea() {
 
     const chosenArea = areaTypes.find(area => area.id === chosenId); // IDで検索
     game.currentArea = chosenArea; // ゲームの状態に現在の地形を保存
-    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して現在の地形を表示
+    updateUI(game, coinAttributesMap, [], null, false, null); // UIを更新して現在の地形を表示
     clearActionArea();
     return chosenArea; // 探索エリアオブジェクト全体を返す
 }
@@ -263,7 +386,7 @@ async function sendMonstersOnExpedition(currentArea) {
     const partyList = document.getElementById('party-list');
     // partyList の要素にクリックイベントリスナーを設定
     // ここで一度全てを更新し、イベントリスナーを付与
-    updateUI(game, coinAttributesMap, expeditionParty, currentArea, true, game.party, GAME_CONSTANTS.MAX_PARTY_SIZE); // 選択フェーズ用のUI更新, 全員選択可能
+    updateUI(game, coinAttributesMap, expeditionParty, currentArea, true, game.party); // 選択フェーズ用のUI更新, 全員選択可能
 
     // uiManagerのcreateButtonsを使用して「派遣を決定」ボタンを生成
     createButtons([{
@@ -296,11 +419,11 @@ async function sendMonstersOnExpedition(currentArea) {
                 console.log(`After toggle - expeditionParty: ${expeditionParty.map(m => m.name).join(', ')}`);
 
                 // UIを即時更新
-                updateEstimatedFoodGain(game, expeditionParty, currentArea); // 直接呼び出す
+                updateEstimatedFoodGain(game, expeditionParty, currentArea);
                 game.estimatedMilkGain = calculateEstimatedMilkGain(game, expeditionParty, currentArea); // 予想ミルク獲得量を計算
                 console.log(`After updateEstimatedFoodGain - game.estimatedFoodGain: ${game.estimatedFoodGain}`);
-                console.log(`After calculateEstimatedMilkGain - game.estimatedMilkGain: ${game.estimatedMilkGain}`); // デバッグログ
-                updateUI(game, coinAttributesMap, expeditionParty, currentArea, true, game.party, GAME_CONSTANTS.MAX_PARTY_SIZE); // これが updateEstimatedFoodGain を呼び出す
+                console.log(`After calculateEstimatedMilkGain - game.estimatedMilkGain: ${game.estimatedMilkGain}`);
+                updateUI(game, coinAttributesMap, expeditionParty, currentArea, true, game.party);
             }
         };
 
@@ -329,7 +452,7 @@ async function sendMonstersOnExpedition(currentArea) {
                 game.currentPhase = 'idle'; // フェーズをアイドルに戻す
                 game.estimatedFoodGain = 0; // 派遣決定後、予想食料獲得量をリセット
                 game.estimatedMilkGain = 0; // 派遣決定後、予想ミルク獲得量をリセット
-                updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを通常状態に戻す
+                updateUI(game, coinAttributesMap, [], null, false, null); // UIを通常状態に戻す
                 resolve({ expeditionParty, restingParty: finalRestingParty });
             }
         });
@@ -430,8 +553,8 @@ async function handleRaid(restingParty, currentArea) {
             playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
 
             logMessage("おじさんのミルクが搾り取られちゃった。");
-            game.milk--;;
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+            game.milk--;
+            updateUI(game, coinAttributesMap, [], null, false, null);
             // uiManagerのcreateButtons関数を使用してボタンを生成
             createButtons([{ id: 'continue', text: '次へ', className: 'action-button' }]);
             await waitForButtonClick();
@@ -450,7 +573,7 @@ async function handleRaid(restingParty, currentArea) {
             playSfx("逃走").catch(e => console.error("効果音の再生に失敗しました:", e));
             logMessage("なんとか逃げ切れたけど、全ての食料を置いてきちゃった。");
             game.food = 0;
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+            updateUI(game, coinAttributesMap, [], null, false, null);
             // uiManagerのcreateButtons関数を使用してボタンを生成
             createButtons([{ id: 'continue', text: '次へ', className: 'action-button' }]);
             await waitForButtonClick();
@@ -478,13 +601,13 @@ async function handleRaid(restingParty, currentArea) {
             // 決闘敗北時の処理
             logMessage("決闘に負けて、おじさんのミルクが搾り取られちゃった。");
             game.milk--;
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+            updateUI(game, coinAttributesMap, [], null, false, null);
         }
         else {
             playSfx("逃走").catch(e => console.error("効果音の再生に失敗しました:", e));
             logMessage("なんとか逃げ切れたけど、全ての食料を置いてきちゃった。");
             game.food = 0;
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+            updateUI(game, coinAttributesMap, [], null, false, null);
         }
         clearActionArea();
         // uiManagerのcreateButtons関数を使用してボタンを生成
@@ -513,10 +636,10 @@ async function handleRaid(restingParty, currentArea) {
             const foodRewards = enemies.reduce((sum, monster) => sum + monster.upkeep, 0) * GAME_CONSTANTS.SPECIAL_RAID_BONUS;
             game.food += foodRewards;
             logMessage(`食料を${foodRewards}獲得したよ！`);
-            updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+            updateUI(game, coinAttributesMap, [], game.currentArea, false, null);
         }
 
-        if (recruitableEnemies.length > 0) {
+        if (recruitableEnemies.length > 0 && !isDailyChallengeActive('新婚旅行') && !isDailyChallengeActive('両手に花') && !isDailyChallengeActive('三銃士')) {
             raidType === 'duel' ? displayGuideMessage('決闘後の勧誘') : displayGuideMessage('ミルクで勧誘');
 
             // uiManagerのcreateButtons関数に渡すボタンデータの配列を構築
@@ -538,32 +661,36 @@ async function handleRaid(restingParty, currentArea) {
                 } else {
                     const chosenEnemy = recruitableEnemies.find(m => m.name === choice);
                     if (game.playerLife.name === '炉裏魂' && chosenEnemy.coinAttributes.length > game.coinSizeLimit) {
-                        // NGの効果音を再生
                         playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
                         displayGuideMessage('炉裏魂ゆえに');
                     }
+                    else if (isDailyChallengeActive('排他的') && !game.party.some(m => m.name === chosenEnemy.name)) {
+                        playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
+                        displayGuideMessage('排他的');
+                    }
+                    else if (isDailyChallengeActive('高地人') && game.party.some(m => m.name === chosenEnemy.name)) {
+                        playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
+                        displayGuideMessage('高地人');
+                    }
                     else if (raidType === 'duel') {
-                        // 加入の効果音を再生
                         playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
                         logMessage(`<span class="monster-name-color">${chosenEnemy.name}</span> が仲間に加わったよ！`);
                         showSpeechBubble([chosenEnemy], '加入', random);
                         // 戦闘勝利後はMAX_PARTY_SIZEの制限なく加入可能
                         game.party.push(chosenEnemy);
-                        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // 食費更新のためUI更新
+                        updateUI(game, coinAttributesMap, [], null, false, null); // 食費更新のためUI更新
                         break;
                     }
                     else if (game.milk > 0) {
-                        // 加入の効果音を再生
                         playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
                         game.milk--; // ミルクを1消費
                         logMessage(`おじさんのミルクで <span class="monster-name-color">${chosenEnemy.name}</span> が仲間に加わったよ！`);
                         showSpeechBubble([chosenEnemy], '加入', random);
                         // 戦闘勝利後はMAX_PARTY_SIZEの制限なく加入可能
                         game.party.push(chosenEnemy);
-                        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // 食費更新のためUI更新
+                        updateUI(game, coinAttributesMap, [], null, false, null); // 食費更新のためUI更新
                         break;
                     } else {
-                        // NGの効果音を再生
                         playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
                         displayGuideMessage('ミルク不足');
                     }
@@ -585,7 +712,7 @@ async function handleRaid(restingParty, currentArea) {
 
 /**
  * 帝国の侵略兵器の襲撃イベントを処理する。
- * 仲間の人数に応じて発生確率が変動し、特定の敵「機」の硬貨を持つモン娘が襲撃してくる。
+ * 仲間の人数に応じて発生確率が変動し、特定の敵「機」の硬貨を持つ敵が襲撃してくる。
  * ボス戦と同様に戦う仲間を選び、選択された仲間は次の戦闘に参加できないようにする。
  * @param {Monster[]} restingParty - キャンプで待機中のモン娘の配列。
  * @param {object} currentArea - 現在の地形情報。
@@ -625,20 +752,24 @@ async function handleImperialInvasionRaid(restingParty, currentArea) {
                 : 'none';
             const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
 
-            /* 難易度を様子見するため、一旦追加硬貨は無しにしておく
-            // 追加硬貨を付与（少な目）
-            if (game.days > GAME_CONSTANTS.BOSS_DAYS) {
-                const maxAdditionalCoins = Math.floor((game.days - GAME_CONSTANTS.BOSS_DAYS) / 5);
-                const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+            if (isDailyChallengeActive('新兵器')) {
+                if (game.days > GAME_CONSTANTS.BOSS_DAYS) {
+                    let maxAdditionalCoins = game.days - GAME_CONSTANTS.BOSS_DAYS + 1;
+                    if (isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor(maxAdditionalCoins / 2);
+                    else maxAdditionalCoins = Math.floor(maxAdditionalCoins / 4);
 
-                for (let j = 0; j < numAdditionalCoins; j++) {
-                    if (newEnemy.coinAttributes.length > 0) {
-                        const randomCoin = newEnemy.coinAttributes[Math.floor(random() * newEnemy.coinAttributes.length)];
-                        newEnemy.additionalCoins.push(randomCoin);
+                    const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+
+                    for (let j = 0; j < numAdditionalCoins; j++) {
+                        if (newEnemy.coinAttributes.length > 0) {
+                            const randomCoin = newEnemy.coinAttributes[Math.floor(random() * newEnemy.coinAttributes.length)];
+                            newEnemy.additionalCoins.push(randomCoin);
+                        }
                     }
                 }
             }
-            */
+
+            // 追加硬貨を付与（少な目）
             enemies.push(newEnemy);
         }
 
@@ -655,7 +786,7 @@ async function handleImperialInvasionRaid(restingParty, currentArea) {
         playSfx("逃走").catch(e => console.error("効果音の再生に失敗しました:", e));
         logMessage("なんとか逃げ切れたけど、全ての食料を置いてきちゃった。");
         game.food = 0;
-        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+        updateUI(game, coinAttributesMap, [], null, false, null);
         clearActionArea();
         // uiManagerのcreateButtons関数を使用してボタンを生成
         createButtons([{ id: 'gameover-confirm', text: 'あらら', className: 'action-button' }]);
@@ -673,7 +804,7 @@ async function handleImperialInvasionRaid(restingParty, currentArea) {
         return false; // ゲームオーバーの可能性あり
     } else {
         displayGuideMessage('襲撃勝利');
-        updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+        updateUI(game, coinAttributesMap, [], game.currentArea, false, null);
 
         clearActionArea();
         // スタイルを解除
@@ -697,7 +828,10 @@ async function handleImperialInvasionRaid(restingParty, currentArea) {
 async function handleBossBattle(currentArea) {
     game.currentPhase = 'bossBattle';
     logMessage("<br>--- ボス戦開始！ ---");
-    displayGuideMessage('ボス戦1');
+
+    if (isDailyChallengeActive('三銃士')) displayGuideMessage('ボス戦2');
+    else if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花')) displayGuideMessage('ボス戦3');
+    else displayGuideMessage('ボス戦1');
 
     playMusic('ボス');
 
@@ -717,7 +851,12 @@ async function handleBossBattle(currentArea) {
     // 食料報酬
     let foodRewards = 0;
 
-    for (let i = 0; i < allGargoyles.length; i++) {
+    // 戦闘開始回数
+    let battleStartCount = 0;
+    if (isDailyChallengeActive('三銃士')) battleStartCount = 1;
+    if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花')) battleStartCount = 2;
+
+    for (let i = battleStartCount; i < allGargoyles.length; i++) {
         // 現在の戦闘に登場するガーゴイルの数を動的に決定 (1体目:1体, 2体目:2体, 3体目:3体)
         const enemiesForThisFight = allGargoyles.slice(0, i + 1);
 
@@ -743,7 +882,7 @@ async function handleBossBattle(currentArea) {
                 default:
             }
             // 敵表示をクリア
-            updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+            updateUI(game, coinAttributesMap, [], game.currentArea, false, null);
         }
 
         // 敵の硬貨の枚数分の食料報酬を獲得
@@ -753,7 +892,7 @@ async function handleBossBattle(currentArea) {
     // ボス戦勝利時の報酬
     game.food += foodRewards;
     logMessage(`食料を${foodRewards}獲得したよ！`);
-    updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+    updateUI(game, coinAttributesMap, [], game.currentArea, false, null);
 
     await stopMusic(true);
 
@@ -768,7 +907,11 @@ async function handleBossBattle(currentArea) {
 async function startFinalBossBattle() {
     clearActionArea();
     logMessage("連邦の中枢に到達！");
-    displayGuideMessage('ボス戦1');
+
+    if (isDailyChallengeActive('三銃士')) displayGuideMessage('ボス戦2');
+    else if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花')) displayGuideMessage('ボス戦3');
+    else displayGuideMessage('ボス戦1');
+
     game.currentPhase = 'finalBossAreaSelection';
 
     playMusic('ボス');
@@ -783,15 +926,22 @@ async function startFinalBossBattle() {
     if (mansionArea) {
         chosenAreas.push(mansionArea); // 館を固定で追加
     }
-    // 残りの2つをランダムに選択（重複なし）
-    const areaCount = game.playerLife.name === '冒険家' ? GAME_CONSTANTS.SELECT_AREA_ADVENTURER : GAME_CONSTANTS.SELECT_AREA_SIZE;
-    while (chosenAreas.length < areaCount && otherEligibleAreas.length > 0) {
-        const randomIndex = Math.floor(random() * otherEligibleAreas.length);
-        const selectedArea = otherEligibleAreas.splice(randomIndex, 1)[0];
-        chosenAreas.push(selectedArea);
+    if (isDailyChallengeActive('奈落')) {
+        // 残りの2つを闇属性から選択
+        chosenAreas.push(eligibleAreas.find(area => area.id === 'darkness'));
+        chosenAreas.push(eligibleAreas.find(area => area.id === 'forestArea'));
     }
-    // 選択肢をシャッフル
-    chosenAreas.sort(() => 0.5 - random());
+    else {
+        // 残りの2つをランダムに選択（重複なし）
+        let numberOfOptions = GAME_CONSTANTS.SELECT_AREA_SIZE;
+        if (game.playerLife.name === '冒険家') numberOfOptions = GAME_CONSTANTS.SELECT_AREA_ADVENTURER;
+        if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士') || isDailyChallengeActive('縄張り')) numberOfOptions++;
+        while (chosenAreas.length < numberOfOptions && otherEligibleAreas.length > 0) {
+            const randomIndex = Math.floor(random() * otherEligibleAreas.length);
+            const selectedArea = otherEligibleAreas.splice(randomIndex, 1)[0];
+            chosenAreas.push(selectedArea);
+        }
+    }
 
     const areaButtons = chosenAreas.map((area, index) => {
         // 硬貨属性をカウントし、まとめた表示形式にする
@@ -822,15 +972,20 @@ async function startFinalBossBattle() {
 
     logMessage(`敵は${finalBossArea.name}にあり！`);
     game.currentArea = finalBossArea; // 現在の地形を設定
-    updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+    updateUI(game, coinAttributesMap, [], game.currentArea, false, null);
 
     const encounters = FINAL_BOSS_ENCOUNTERS[finalBossArea.id];
 
     // 戦闘の前に、パーティメンバーのhasBeenSentToBattleフラグをリセット
     game.party.forEach(monster => monster.hasBeenSentToBattle = false);
 
+    // 戦闘開始回数
+    let battleStartCount = 0;
+    if (isDailyChallengeActive('三銃士')) battleStartCount = 1;
+    if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花')) battleStartCount = 2;
+
     // 3連戦のループ
-    for (let i = 0; i < encounters.length; i++) {
+    for (let i = battleStartCount; i < encounters.length; i++) {
         logMessage(`\nラスボス戦：第${i + 1}戦目開始！`);
         const enemiesToGenerateData = encounters[i];
         const finalBossEnemies = [];
@@ -844,9 +999,13 @@ async function startFinalBossBattle() {
                     ? template.talker[Math.floor(random() * template.talker.length)]
                     : 'none';
                 let enemy = new Monster(template.name, [...template.coins], template.upkeep, false, chosenTalker);
+
                 // 追加の硬貨を付与
-                const maxAdditionalCoins = Math.floor((game.days - GAME_CONSTANTS.BOSS_DAYS) / 2);
+                let maxAdditionalCoins = game.days - GAME_CONSTANTS.BOSS_DAYS;
+                if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor((maxAdditionalCoins) / 2);
+
                 const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+
                 for (let j = 0; j < numAdditionalCoins; j++) {
                     if (enemy.coinAttributes.length > 0) {
                         const randomCoin = enemy.coinAttributes[Math.floor(random() * enemy.coinAttributes.length)];
@@ -859,7 +1018,7 @@ async function startFinalBossBattle() {
         }
 
         game.currentEnemies = finalBossEnemies; // 現在の敵を設定 (UI更新用)
-        updateUI(game, coinAttributesMap, [], game.currentEnemies, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+        updateUI(game, coinAttributesMap, [], game.currentEnemies, false, null);
 
         // 戦闘ロジックを呼び出す
         const battleResult = await conductFight(game, game.party, game.currentEnemies, random, game.currentArea, 'boss');
@@ -881,7 +1040,7 @@ async function startFinalBossBattle() {
                 default:
             }
             // 敵表示をクリア
-            updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+            updateUI(game, coinAttributesMap, [], game.currentArea, false, null);
         }
     }
 
@@ -909,6 +1068,26 @@ async function handleRecruitmentEvent(currentArea) {
             template.coins.some(coin => currentArea.coinAttributes.includes(coin)) && !template.coins.includes('enemy')
         );
 
+        // 日替わりチャレンジのフィルタリング
+        if (isDailyChallengeActive('廃刀令')) {
+            potentialTemplates = potentialTemplates.filter(m => !m.coins.includes('iron') && !m.coins.includes('bow'));
+        }
+        else if (isDailyChallengeActive('渇水')) {
+            potentialTemplates = potentialTemplates.filter(m => !m.coins.includes('water') && !m.coins.includes('snow') && !m.coins.includes('fishing'));
+        }
+        else if (isDailyChallengeActive('大原動機')) {
+            potentialTemplates = potentialTemplates.filter(m => !m.coins.includes('forest'));
+        }
+
+        if (isDailyChallengeActive('排他的')) {
+            const filterdTemplates = potentialTemplates.filter(template => game.party.some(m => m.name === template.name));
+            if (filterdTemplates.length > 0) potentialTemplates = filterdTemplates;
+        }
+        else if (isDailyChallengeActive('高地人')) {
+            const filterdTemplates = potentialTemplates = potentialTemplates.filter(template => !game.party.some(m => m.name === template.name));
+            if (filterdTemplates.length > 0) potentialTemplates = filterdTemplates;
+        }
+
         if (potentialTemplates.length > 0) {
             // 硬貨の枚数に応じた重み付けを適用して1体選択
             const chosenMonsters = getUniqueRandomMonsters(game, 1, potentialTemplates, true, 0, game.coinSizeLimit, random);
@@ -920,7 +1099,40 @@ async function handleRecruitmentEvent(currentArea) {
     else {
         // 敵属性以外の全てのモン娘を対象とする
         let potentialTemplates = monsterTemplates.filter(template => !template.coins.includes('enemy'));
+
+        // 日替わりチャレンジのフィルタリング
+        if (isDailyChallengeActive('廃刀令')) {
+            potentialTemplates = potentialTemplates.filter(m => !m.coins.includes('iron') && !m.coins.includes('bow'));
+        }
+        else if (isDailyChallengeActive('渇水')) {
+            potentialTemplates = potentialTemplates.filter(m => !m.coins.includes('water') && !m.coins.includes('snow') && !m.coins.includes('fishing'));
+        }
+        else if (isDailyChallengeActive('大原動機')) {
+            potentialTemplates = potentialTemplates.filter(m => !m.coins.includes('forest'));
+        }
+
+        if (isDailyChallengeActive('排他的')) {
+            const filterdTemplates = potentialTemplates.filter(template => game.party.some(m => m.name === template.name));
+            if (filterdTemplates.length > 0) potentialTemplates = filterdTemplates;
+        }
+        else if (isDailyChallengeActive('高地人')) {
+            const filterdTemplates = potentialTemplates = potentialTemplates.filter(template => !game.party.some(m => m.name === template.name));
+            if (filterdTemplates.length > 0) potentialTemplates = filterdTemplates;
+        }
+
         monsterToOffer = getUniqueRandomMonsters(game, 1, potentialTemplates, false, 0, game.coinSizeLimit, random)[0];
+    }
+
+    // 追加の硬貨を付与
+    let maxAdditionalCoins = game.days - GAME_CONSTANTS.BOSS_DAYS + 1;
+    if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor((maxAdditionalCoins) / 2);
+
+    let numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+    for (let j = 0; j < numAdditionalCoins; j++) {
+        if (monsterToOffer.coinAttributes.length > 0) {
+            const randomCoin = monsterToOffer.coinAttributes[Math.floor(random() * monsterToOffer.coinAttributes.length)];
+            monsterToOffer.additionalCoins.push(randomCoin);
+        }
     }
 
     logMessage(`<span class="monster-name-color">${monsterToOffer.name}</span> が仲間になりたそうにこちらを見ているよ！`);
@@ -944,14 +1156,22 @@ async function handleRecruitmentEvent(currentArea) {
             break;
         }
         else {
-            if (game.milk >= 1) {
+            if (isDailyChallengeActive('排他的') && !game.party.some(m => m.name === monsterToOffer.name)) {
+                playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
+                displayGuideMessage('排他的');
+            }
+            else if (isDailyChallengeActive('高地人') && game.party.some(m => m.name === monsterToOffer.name)) {
+                playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
+                displayGuideMessage('高地人');
+            }
+            else if (game.milk >= 1) {
                 playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
 
                 game.milk--;
                 game.party.push(monsterToOffer);
                 logMessage(`<span class="monster-name-color">${monsterToOffer.name}</span> が仲間になったよ！`);
                 showSpeechBubble([monsterToOffer], '加入', random);
-                updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+                updateUI(game, coinAttributesMap, [], null, false, null);
                 break;
             } else {
                 playSfx("NG").catch(e => console.error("効果音の再生に失敗しました:", e));
@@ -976,6 +1196,8 @@ async function handleSisterEvent(partyList, random) {
     const randomIndex = Math.floor(random() * partyList.length);
     const selectedMonster = partyList[randomIndex];
 
+    logMessage(`${selectedMonster.name}の生き別れた血の繋がっていない妹が現れた！`);
+
     // 選出されたモン娘の複製を作成
     const sisterMonster = new Monster(
         selectedMonster.name,
@@ -989,7 +1211,6 @@ async function handleSisterEvent(partyList, random) {
 
     // 複製したモン娘を仲間に加える
     partyList.push(sisterMonster);
-    logMessage(`${selectedMonster.name}の生き別れた血の繋がっていない妹が現れた！`);
     logMessage(`${sisterMonster.name}が仲間になった！`);
 
     playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
@@ -997,7 +1218,7 @@ async function handleSisterEvent(partyList, random) {
     displayGuideMessage('妹');
 
     // UIを更新して新しい仲間を表示
-    updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+    updateUI(game, coinAttributesMap, [], game.currentArea, false, null);
 
     clearActionArea();
 }
@@ -1011,7 +1232,23 @@ async function handleFavourEvent() {
     clearActionArea();
 
     // enemy属性を除く全ての硬貨をフィルタリング
-    const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy' && coin.id !== 'machine');
+    let availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy' && coin.id !== 'machine');
+
+    // 味方モン娘が所持している硬貨と、既に神の寵愛で得た硬貨を収集
+    const partyCoins = new Set();
+    game.party.forEach(monster => {
+        monster.coinAttributes.forEach(coinId => partyCoins.add(coinId));
+        monster.additionalCoins.forEach(coinId => partyCoins.add(coinId));
+    });
+    game.favour.forEach(coinId => partyCoins.add(coinId));
+
+    // availableCoinsを更にフィルタリング（味方モン娘達が所持している硬貨、またはプレイヤーが所持している神の寵愛）
+    availableCoins = availableCoins.filter(coin => partyCoins.has(coin.id));
+
+    // 日替わりチャレンジのフィルタリング
+    if (isDailyChallengeActive('一神教')) {
+        availableCoins = availableCoins.filter(coin => coin.id === game.favour[0]);
+    }
 
     // ランダムに1つ選択
     const chosenCoin = availableCoins[Math.floor(random() * availableCoins.length)];
@@ -1023,7 +1260,7 @@ async function handleFavourEvent() {
     // 寵愛の効果音を再生
     playSfx("寵愛").catch(e => console.error("効果音の再生に失敗しました:", e));
 
-    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して表示を反映
+    updateUI(game, coinAttributesMap, [], null, false, null); // UIを更新して表示を反映
 
     clearActionArea();
 }
@@ -1037,27 +1274,27 @@ async function handleFoodSacrificeEvent() {
     logMessage(`<br><div id="game-messages-phase">--- 祈り ---</div>`);
     displayGuideMessage('祈り');
 
-    const foodCost = GAME_CONSTANTS.TRADE_FOOD_INITIAL_COST + game.tradeCountByFood * GAME_CONSTANTS.TRADE_FOOD_SCALING_COST;
-
-    const sacrificeButtons = [{
-        id: 'sacrifice',
-        text: `神様に食料を捧げる(${foodCost})`,
-        className: 'action-button'
-    }, {
-        id: 'skipEvent',
-        text: `また今度`,
-        className: 'action-button'
-    }];
-    createButtons(sacrificeButtons); // uiManagerのcreateButtonsを使用してボタンを生成
-
     while (true) {
+        const foodCost = GAME_CONSTANTS.TRADE_FOOD_INITIAL_COST + game.tradeCountByFood * GAME_CONSTANTS.TRADE_FOOD_SCALING_COST;
+
+        const sacrificeButtons = [{
+            id: 'sacrifice',
+            text: `神様に食料を捧げる(${foodCost})`,
+            className: 'action-button'
+        }, {
+            id: 'skipEvent',
+            text: `また今度`,
+            className: 'action-button'
+        }];
+        createButtons(sacrificeButtons); // uiManagerのcreateButtonsを使用してボタンを生成
+
         const initialChoice = await waitForButtonClick();
         clearActionArea();
 
         if (initialChoice === 'skipEvent') {
             playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
             logMessage("今夜はやめておくよ。");
-            return;
+            break;
         }
 
         if (initialChoice === 'sacrifice') {
@@ -1072,13 +1309,21 @@ async function handleFoodSacrificeEvent() {
 
             playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
 
-            const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy' && coin.id !== 'machine');
+            let availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy' && coin.id !== 'machine');
             const chosenCoins = [];
-            while (chosenCoins.length < 3) {
-                const randomIndex = Math.floor(random() * availableCoins.length);
-                const selectedCoin = availableCoins[randomIndex];
-                if (!chosenCoins.includes(selectedCoin)) {
-                    chosenCoins.push(selectedCoin);
+
+            // 日替わりチャレンジのフィルタリング
+            if (isDailyChallengeActive('一神教')) {
+                availableCoins = availableCoins.filter(coin => coin.id === game.favour[0]);
+                chosenCoins.push(availableCoins[0]);
+            }
+            else {
+                while (chosenCoins.length < 4) {
+                    const randomIndex = Math.floor(random() * availableCoins.length);
+                    const selectedCoin = availableCoins[randomIndex];
+                    if (!chosenCoins.includes(selectedCoin)) {
+                        chosenCoins.push(selectedCoin);
+                    }
                 }
             }
 
@@ -1105,8 +1350,9 @@ async function handleFoodSacrificeEvent() {
             // 寵愛の効果音を再生
             playSfx("寵愛").catch(e => console.error("効果音の再生に失敗しました:", e));
 
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
-            break; // 正常に選択・処理が完了したらループを抜ける
+            updateUI(game, coinAttributesMap, [], null, false, null);
+
+            continue; // ループを続行して再入力を待つ
         }
     }
     clearActionArea(); // ループを抜けた後もクリア
@@ -1117,43 +1363,49 @@ async function handleFoodSacrificeEvent() {
  * @returns {Promise<void>}
  */
 async function handleMilkPartyEvent() {
-    if (game.milk >= game.party.length && game.party.length > 0 && game.food >= 0) {
-        logMessage(`<br><div id="game-messages-phase">--- ミルクパーティ ---</div>`);
-        displayGuideMessage('ミルクパーティ');
+    while (true) {
+        if ((game.milk >= game.party.length && game.food >= 0) || (game.milk >= game.party.length * 2)) {
+            logMessage(`<br><div id="game-messages-phase">--- ミルクパーティ ---</div>`);
+            displayGuideMessage('ミルクパーティ');
 
-        const partyButtons = [{
-            id: 'strengthen',
-            text: `仲間全員を強化する(ミルク${game.party.length}杯)`,
-            className: 'action-button'
-        }, {
-            id: 'skip_strengthen',
-            text: 'やめておく',
-            className: 'action-button'
-        }];
-        createButtons(partyButtons); // uiManagerのcreateButtonsを使用してボタンを生成
+            const partyButtons = [{
+                id: 'strengthen',
+                text: `仲間全員を強化する(ミルク${game.party.length}杯)`,
+                className: 'action-button'
+            }, {
+                id: 'skip_strengthen',
+                text: 'やめておく',
+                className: 'action-button'
+            }];
+            createButtons(partyButtons); // uiManagerのcreateButtonsを使用してボタンを生成
 
-        const choice = await waitForButtonClick();
-        clearActionArea();
+            const choice = await waitForButtonClick();
+            clearActionArea();
 
-        if (choice === 'strengthen') {
-            game.milk -= game.party.length;
-            game.party.forEach(monster => {
-                // 生まれ持った硬貨の中からランダムに1つ選ぶ
-                if (monster.coinAttributes.length > 0) {
-                    const randomCoin = monster.coinAttributes[Math.floor(random() * monster.coinAttributes.length)];
-                    monster.additionalCoins.push(randomCoin);
-                    const coinHtml = createCoinTooltipHtml(randomCoin, coinAttributesMap, true); // isAdditional を true に設定
-                    logMessage(`<span class="monster-name-color">${monster.name}</span> は ${coinHtml} の硬貨を獲得！`);
-                }
-            });
-            playSfx("寵愛").catch(e => console.error("効果音の再生に失敗しました:", e));
-            showSpeechBubble(game.party, '食後', random);
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
-        } else {
-            logMessage(`残念ながらミルクパーティは延期となりました。`);
-            showSpeechBubble(game.party, '延期', random);
-            playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+            if (choice === 'strengthen') {
+                game.milk -= game.party.length;
+                game.party.forEach(monster => {
+                    // 生まれ持った硬貨の中からランダムに1つ選ぶ
+                    if (monster.coinAttributes.length > 0) {
+                        const randomCoin = monster.coinAttributes[Math.floor(random() * monster.coinAttributes.length)];
+                        monster.additionalCoins.push(randomCoin);
+                        const coinHtml = createCoinTooltipHtml(randomCoin, coinAttributesMap, true); // isAdditional を true に設定
+                        logMessage(`<span class="monster-name-color">${monster.name}</span> は ${coinHtml} の硬貨を獲得！`);
+                    }
+                });
+                playSfx("寵愛").catch(e => console.error("効果音の再生に失敗しました:", e));
+                showSpeechBubble(game.party, '食後', random);
+                updateUI(game, coinAttributesMap, [], null, false, null);
+            } else {
+                logMessage(`残念ながらミルクパーティは延期となりました。`);
+                showSpeechBubble(game.party, '延期', random);
+                playSfx("選択").catch(e => console.error("効果音の再生に失敗しました:", e));
+                updateUI(game, coinAttributesMap, [], null, false, null);
+                break;
+            }
+        }
+        else {
+            break;
         }
     }
 }
@@ -1200,7 +1452,7 @@ async function conductCamp(expeditionParty, currentArea) {
     });
     game.food += foodGained;
     logMessage(`探索で食料を${foodGained}獲得したよ。`);
-    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+    updateUI(game, coinAttributesMap, [], null, false, null);
 
     // 食費の計算
     game.upkeep = game.party.reduce((total, monster) => total + monster.upkeep, 0);
@@ -1235,7 +1487,7 @@ async function conductCamp(expeditionParty, currentArea) {
                 game.milk += delicacy.milkConversion;
                 logMessage(`${member.name}が${delicacy.name}を見つけてきたよ！　栄養満点だからおじさんが食べなよ。`);
                 delicacyFound = true;
-                updateUI(game, coinAttributesMap, [], currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+                updateUI(game, coinAttributesMap, [], currentArea, false, null);
                 break; // この珍味は獲得したので次のモン娘へ
             }
         }
@@ -1244,22 +1496,26 @@ async function conductCamp(expeditionParty, currentArea) {
         }
     }
 
-    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+    updateUI(game, coinAttributesMap, [], null, false, null);
 
     // 食料を対価に硬貨を獲得するイベントを発生させる
-    await handleFoodSacrificeEvent();
+    if (!isDailyChallengeActive('無信仰')) {
+        await handleFoodSacrificeEvent();
+    }
 
     // 仲間の人数分のミルクを消費して仲間全員に追加の硬貨を与えるイベントを発生させる。
-    await handleMilkPartyEvent();
+    if (!isDailyChallengeActive('禁酒法')) {
+        await handleMilkPartyEvent();
+    }
 
     // 食料が尽きた際の救済処置
     if (game.food < 0) {
         const milkCost = game.party.length;
-        if (game.milk >= milkCost) {
+        if (game.milk >= milkCost && !isDailyChallengeActive('禁酒法')) {
             game.milk -= milkCost;
             game.food = 0; // 食料を最低値に回復
             logMessage(`食料が尽きたけど、仲間モン娘 ${milkCost} 人にミルクを支払って冒険を続行だ！`);
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+            updateUI(game, coinAttributesMap, [], null, false, null);
             // uiManagerのcreateButtons関数を使用してボタンを生成
             createButtons([{ id: 'continue-after-milk', text: '続行', className: 'action-button' }]);
             await waitForButtonClick();
@@ -1282,7 +1538,7 @@ async function conductCamp(expeditionParty, currentArea) {
 function endGame(isCleared) {
     clearActionArea();
     toggleInitialSetupArea(true); // 初期セットアップエリアを再表示
-    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを初期状態にリセット
+    updateUI(game, coinAttributesMap, [], null, false, null); // UIを初期状態にリセット
 
     const homunculusContainer = document.getElementById('homunculus-container');
     const homunculusImage = document.getElementById('homunculus-image');
@@ -1363,6 +1619,20 @@ async function event(partyList, currentArea) {
         eventType = 'none';
     }
 
+    // 日替わりチャレンジによるイベントの書き換え
+    if (isDailyChallengeActive('妹の日')) {
+        eventType = 'sister';
+    }
+    if (isDailyChallengeActive('神寵者')) {
+        eventType = 'favour';
+    }
+    if (isDailyChallengeActive('無信仰') && eventType === 'favour') {
+        eventType = 'none';
+    }
+    if ((isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士')) && (eventType === 'sister' || eventType === 'recruit')) {
+        eventType = 'none';
+    }
+
     switch (eventType) {
         case 'favour':
             logMessage("神様からの贈り物だ！");
@@ -1393,7 +1663,7 @@ async function gameLoop() {
     game.currentPhase = 'joinPhase';
     toggleInitialSetupArea(false); // 初期セットアップエリアを非表示にする
     clearActionArea();
-    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを更新して、初期セットアップエリアが非表示になったことを反映
+    updateUI(game, coinAttributesMap, [], null, false, null); // UIを更新して、初期セットアップエリアが非表示になったことを反映
 
     displayGuideMessage('初期表示');
 
@@ -1442,7 +1712,7 @@ async function gameLoop() {
                 endGame(false);
                 return; // ゲームオーバー
             } else {
-                updateUI(game, coinAttributesMap, [], game.currentArea, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+                updateUI(game, coinAttributesMap, [], game.currentArea, false, null);
                 // ボス戦後は全員待機状態に戻る
                 expeditionParty = [];
                 restingParty = game.party;
@@ -1453,7 +1723,6 @@ async function gameLoop() {
             // 夜明けの効果音を再生
             playSfx("夜明け").catch(e => console.error("効果音の再生に失敗しました:", e));
 
-            // モン娘に「起床」の台詞を喋らせる
             showSpeechBubble(game.party, '起床', random);
 
             currentArea = await selectExplorationArea();
@@ -1482,7 +1751,15 @@ async function gameLoop() {
         }
 
         // 帝国の侵略兵器の襲撃イベント判定
-        if (game.days !== GAME_CONSTANTS.BOSS_DAYS && game.days !== GAME_CONSTANTS.MAX_DAYS && game.party.length > GAME_CONSTANTS.RAID_EMPIRE_MIN_PARTY_SIZE) {
+        let isImperialRaid = false;
+        if (isDailyChallengeActive('休戦中') || game.days === GAME_CONSTANTS.BOSS_DAYS || game.days === GAME_CONSTANTS.MAX_DAYS) {
+            isImperialRaid = false;
+        }
+        else if (isDailyChallengeActive('戦争中') || game.party.length > GAME_CONSTANTS.RAID_EMPIRE_MIN_PARTY_SIZE) {
+            isImperialRaid = true;
+        }
+
+        if (isImperialRaid) {
             const baseChance = Math.floor(game.party.length / GAME_CONSTANTS.RAID_EMPIRE_CHANCE);
             const numChecks = Math.floor(game.party.length / GAME_CONSTANTS.RAID_EMPIRE_COUNT);
             let imperialRaidOccurred = false;
@@ -1492,7 +1769,10 @@ async function gameLoop() {
             restingParty.forEach(monster => monster.hasBeenSentToBattle = false);
 
             for (let i = 0; i < numChecks; i++) {
-                if (random() < (baseChance / 100)) { // 確率計算
+                let raidChance = random();
+                if (isDailyChallengeActive('戦争中') && !imperialRaidOccurred) raidChance = 0;
+
+                if (raidChance < (baseChance / 100)) { // 確率計算
                     playSfx('警告');
 
                     if (!imperialRaidOccurred) playMusic('帝国');
@@ -1524,10 +1804,14 @@ async function gameLoop() {
             break;
         }
 
-        updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // 1日の終了後、UIを通常状態に戻すためにもう一度呼び出し
+        updateUI(game, coinAttributesMap, [], null, false, null); // 1日の終了後、UIを通常状態に戻すためにもう一度呼び出し
 
         game.milk++; // 日ごとにミルクを1杯加算
         if (game.playerLife.name === '炉裏魂') {
+            game.milk++;
+        }
+
+        if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士')) {
             game.milk++;
         }
 
@@ -1565,6 +1849,8 @@ function resetGameToInitialState() {
     game.playerLife = null;
     game.tradeCountByFood = 0;
     game.tradeCountByMilk = 0;
+    game.isDailyChallengeMode = false; // 日替わりチャレンジモードをリセット
+    game.dailyChallenges = []; // 日替わりチャレンジをリセット
 
     // パーティメンバーのhasBeenSentToBattleフラグを初期化（ゲーム開始時にもリセット）
     game.party.forEach(monster => monster.hasBeenSentToBattle = false);
@@ -1592,17 +1878,109 @@ function resetGameToInitialState() {
         rightAlchemyImage.style.display = 'none';
     }
 
-    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを通常状態に戻す
+    // 日替わりチャレンジを再選択し、UIを更新
+    const dateSeed = getDateSeed();
+    game.dailyChallenges = selectDailyChallenges(dateSeed);
+    updateUI(game, coinAttributesMap, [], null, false, null); // UIを通常状態に戻す
 }
+
+/**
+ * ゲームの初期状態を設定し、ゲームループを開始する共通関数。
+ * @param {boolean} isDailyChallenge - 日替わりチャレンジモードかどうか。
+ * @param {string} seed - 使用するシード値。
+ */
+async function initializeGame(isDailyChallenge, seed) {
+    game.currentSeed = seed;
+    random = mulberry32(seed); // 乱数生成器を初期化
+
+    game.isDailyChallengeMode = isDailyChallenge;
+    if (isDailyChallenge) {
+        game.dailyChallenges = selectDailyChallenges(seed); // 日替わりチャレンジモードの場合はチャレンジを選択
+    } else {
+        game.dailyChallenges = []; // 通常モードの場合はクリア
+    }
+
+    // data.js の life からランダムに1つ選択し、プレイヤーの生い立ちにする
+    const randomLifeIndex = Math.floor(random() * life.length);
+    game.playerLife = life[randomLifeIndex];
+    console.log("選択された生い立ち:", game.playerLife);
+
+    game.food = GAME_CONSTANTS.INITIAL_FOOD; // 初期食料
+    game.milk = GAME_CONSTANTS.INITIAL_MILK; // 初期ミルク
+    game.days = 0;
+    game.party = [];
+    game.battleAllowance = 0;
+    game.currentArea = null;
+    game.estimatedFoodGain = 0; // 予想食料獲得量もリセット
+    game.estimatedMilkGain = 0; // 予想ミルク獲得量もリセット
+    game.upkeep = 0; // 食費もリセット
+    game.currentPhase = 'initial'; // フェーズを初期状態に戻す
+    game.favour = []; // 神の寵愛もリセット
+    game.coinSizeLimit = game.playerLife.name === '炉裏魂' ? 3 : Infinity;
+    game.tradeCountByFood = 0;
+    game.tradeCountByMilk = 0;
+
+    // パーティメンバーのhasBeenSentToBattleフラグを初期化（ゲーム開始時にもリセット）
+    game.party.forEach(monster => monster.hasBeenSentToBattle = false);
+
+    const gameMessages = document.getElementById('game-messages');
+    if (gameMessages) {
+        gameMessages.innerHTML = ''; // メッセージエリアをクリア
+        logMessage(isDailyChallenge ? "日替わりチャレンジが始まるよ！" : "過酷な旅路が始まるよ！");
+    } else {
+        console.error("DOM element 'game-messages' not found at game start.");
+    }
+
+    // 生い立ち画像を表示
+    const playerLifeImage = document.getElementById('player-life-image');
+    if (playerLifeImage && game.playerLife && imagePaths[game.playerLife.name]) {
+        playerLifeImage.src = imagePaths[game.playerLife.name];
+        playerLifeImage.style.display = 'block'; // 画像を表示
+        // 生い立ち画像にツールチップイベントリスナーを追加
+        // 既存のイベントリスナーを削除してから追加（重複登録防止）
+        if (playerLifeImage._tooltipMouseOverListener) {
+            playerLifeImage.removeEventListener('mouseover', playerLifeImage._tooltipMouseOverListener);
+        }
+        if (playerLifeImage._tooltipMouseOutListener) {
+            playerLifeImage.removeEventListener('mouseout', playerLifeImage._tooltipMouseOutListener);
+        }
+        playerLifeImage._tooltipMouseOverListener = (event) => showLifeTooltip(game.playerLife, event.currentTarget);
+        playerLifeImage._tooltipMouseOutListener = hideLifeTooltip;
+        playerLifeImage.addEventListener('mouseover', playerLifeImage._tooltipMouseOverListener);
+        playerLifeImage.addEventListener('mouseout', playerLifeImage._tooltipMouseOutListener);
+    } else {
+        console.warn("プレイヤーの生い立ち画像または対応する画像パスが見つかりませんでした。");
+        if (playerLifeImage) {
+            playerLifeImage.style.display = 'none'; // 画像を非表示
+        }
+    }
+
+    if (!isDailyChallengeActive('無信仰')) {
+        // enemy属性を除く全ての硬貨をフィルタリング
+        const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy' && coin.id !== 'machine');
+        // ランダムに1つ神の寵愛を取得
+        const chosenCoin = availableCoins[Math.floor(random() * availableCoins.length)];
+        game.favour.push(chosenCoin.id); // game.favour に硬貨のIDを追加
+    }
+
+    updateUI(game, coinAttributesMap, [], null, false, null); // UIを通常状態に戻す
+
+    playMusic('レベル1'); // ゲーム開始時にレベル1の音楽を再生
+
+    gameLoop();
+}
+
 
 // DOMContentLoaded イベントで要素を取得し、イベントリスナーを設定
 document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
     // DOM要素の取得 - ここでconstで宣言し、直接使用する
     const startGameButton = document.getElementById('start-game-button');
+    const startDailyChallengeButton = document.getElementById('start-daily-challenge-button'); // 追加
     const seedInput = document.getElementById('seed-input');
     const gameMessages = document.getElementById('game-messages');
     const playerLifeImage = document.getElementById('player-life-image');
     const toggleCoinDisplayButton = document.getElementById('toggle-coin-display-button');
+    const dailyChallengeDisplay = document.getElementById('daily-challenge-display'); // 追加
 
     const loadingOverlay = document.getElementById('loading-overlay');
     const progressBarFill = document.getElementById('progress-bar-fill');
@@ -1647,6 +2025,9 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
     // ローディング画面を非表示
     loadingOverlay.style.display = 'none';
 
+    // 日替わりチャレンジの初期設定
+    const dateSeed = getDateSeed();
+    game.dailyChallenges = selectDailyChallenges(dateSeed);
 
     // 硬貨表示切り替えボタンのイベントリスナー
     if (toggleCoinDisplayButton) {
@@ -1666,69 +2047,27 @@ document.addEventListener('DOMContentLoaded', async () => { // asyncを追加
             } else {
                 console.log(`startGameButton: Using provided seed: ${seedValue}`); // デバッグログ
             }
-            game.currentSeed = seedValue;
-            random = mulberry32(seedValue); // 乱数生成器を初期化
-
-            // data.js の life からランダムに1つ選択し、プレイヤーの生い立ちにする
-            const randomLifeIndex = Math.floor(random() * life.length);
-            game.playerLife = life[randomLifeIndex];
-            console.log("選択された生い立ち:", game.playerLife);
-
-            game.food = GAME_CONSTANTS.INITIAL_FOOD; // 初期食料
-            game.milk = GAME_CONSTANTS.INITIAL_MILK; // 初期ミルク
-            game.days = 0;
-            game.party = [];
-            game.battleAllowance = 0;
-            game.currentArea = null;
-            game.estimatedFoodGain = 0; // 予想食料獲得量もリセット
-            game.estimatedMilkGain = 0; // 予想ミルク獲得量もリセット
-            game.upkeep = 0; // 食費もリセット
-            game.currentPhase = 'initial'; // フェーズを初期状態に戻す
-            game.favour = []; // 神の寵愛もリセット
-            game.coinSizeLimit = game.playerLife.name === '炉裏魂' ? 3 : Infinity;
-            game.tradeCountByFood = 0;
-            game.tradeCountByMilk = 0;
-
-            // パーティメンバーのhasBeenSentToBattleフラグを初期化（ゲーム開始時にもリセット）
-            game.party.forEach(monster => monster.hasBeenSentToBattle = false);
-
-            if (gameMessages) {
-                gameMessages.innerHTML = ''; // メッセージエリアをクリア
-                logMessage("過酷な旅路が始まるよ！");
-            } else {
-                console.error("DOM element 'game-messages' not found at game start.");
-            }
-
-            // 生い立ち画像を表示
-            if (playerLifeImage && game.playerLife && imagePaths[game.playerLife.name]) {
-                playerLifeImage.src = imagePaths[game.playerLife.name];
-                playerLifeImage.style.display = 'block'; // 画像を表示
-                // 生い立ち画像にツールチップイベントリスナーを追加
-                playerLifeImage.addEventListener('mouseover', (event) => showLifeTooltip(game.playerLife, event.currentTarget));
-                playerLifeImage.addEventListener('mouseout', hideLifeTooltip);
-            } else {
-                console.warn("プレイヤーの生い立ち画像または対応する画像パスが見つかりませんでした。");
-                if (playerLifeImage) {
-                    playerLifeImage.style.display = 'none'; // 画像を非表示
-                }
-            }
-
-            // enemy属性を除く全ての硬貨をフィルタリング
-            const availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy' && coin.id !== 'machine');
-            // ランダムに1つ神の寵愛を取得
-            const chosenCoin = availableCoins[Math.floor(random() * availableCoins.length)];
-            game.favour.push(chosenCoin.id); // game.favour に硬貨のIDを追加
-
-            updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE); // UIを通常状態に戻す
-
-            playMusic('レベル1'); // ゲーム開始時にレベル1の音楽を再生
-
-            gameLoop();
+            initializeGame(false, seedValue);
         });
     } else {
         console.error("DOM element 'start-game-button' が見つかりませんでした。ゲームを開始できません。");
     }
 
+    // 日替わりチャレンジボタンのイベントリスナー
+    if (startDailyChallengeButton) {
+        // マウスオーバーでツールチップ表示
+        startDailyChallengeButton.addEventListener('mouseover', (event) => showDailyChallengeTooltip(game.dailyChallenges, event));
+        startDailyChallengeButton.addEventListener('mouseout', hideDailyChallengeTooltip);
+
+        startDailyChallengeButton.addEventListener('click', () => {
+            console.log("日替わりチャレンジボタンがクリックされました。");
+            const dateSeed = (seedInput.value.trim() === '') ? getDateSeed() : seedInput.value.trim();
+            initializeGame(true, dateSeed);
+        });
+    } else {
+        console.error("DOM element 'start-daily-challenge-button' が見つかりませんでした。");
+    }
+
     // 初期UI表示
-    updateUI(game, coinAttributesMap, [], null, false, null, GAME_CONSTANTS.MAX_PARTY_SIZE);
+    updateUI(game, coinAttributesMap, [], null, false, null);
 });

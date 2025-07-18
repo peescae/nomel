@@ -15,6 +15,7 @@ let areaTooltipElement;    // エリア情報ポップアップ用の単一のto
 let coinTooltipElement;    // 硬貨情報ポップアップ用の単一のtooltip要素
 let lifeTooltipElement;    // 生い立ち情報ポップアップ用の単一のtooltip要素
 let favourTooltipElement;  // 神の寵愛情報ポップアップ用の単一のtooltip要素
+let dailyChallengeTooltipElement; // 日替わりチャレンジ情報ポップアップ用の単一のtooltip要素
 
 let draggedItem = null; // ドラッグ中の要素を保持
 
@@ -176,6 +177,35 @@ function createFavourTooltipElement() {
             visibility: hidden;
         `;
         document.body.appendChild(favourTooltipElement);
+    }
+}
+
+/**
+ * 日替わりチャレンジ情報ポップアップ要素を生成する。
+ * 初回のみ呼び出され、bodyにアタッチされる。
+ */
+function createDailyChallengeTooltipElement() {
+    if (!dailyChallengeTooltipElement) { // 既に存在する場合は作成しない
+        dailyChallengeTooltipElement = document.createElement('div');
+        dailyChallengeTooltipElement.id = 'daily-challenge-tooltip';
+        dailyChallengeTooltipElement.style.cssText = `
+            position: absolute;
+            background-color: #3b3f47;
+            border: 1px solid #ff7e7e; /* 日替わりチャレンジの色 */
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 300px;
+            z-index: 2005; /* 他のツールチップより高いz-index */
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            text-align: left;
+            font-size: 0.9em;
+            line-height: 1.5;
+        `;
+        document.body.appendChild(dailyChallengeTooltipElement);
     }
 }
 
@@ -355,6 +385,24 @@ export function showFavourTooltip(event) {
 }
 
 /**
+ * 日替わりチャレンジ情報ポップアップを表示する。
+ * @param {object[]} dailyChallenges - 表示対象の日替わりチャレンジの配列。
+ * @param {MouseEvent} event - マウスイベントオブジェクト。
+ */
+export function showDailyChallengeTooltip(dailyChallenges, event) {
+    createDailyChallengeTooltipElement();
+    if (!dailyChallengeTooltipElement) return;
+
+    let tooltipContent = `<h4>本日の日替わりチャレンジ</h4>`;
+    dailyChallenges.forEach(challenge => {
+        tooltipContent += `<p><strong>${challenge.name}:</strong> ${challenge.help}</p>`;
+    });
+
+    dailyChallengeTooltipElement.innerHTML = tooltipContent;
+    positionTooltip(dailyChallengeTooltipElement, event);
+}
+
+/**
  * モン娘の硬貨情報ポップアップを非表示にする。
  */
 export function hideMonsterTooltip() {
@@ -401,6 +449,16 @@ export function hideFavourTooltip() {
     if (favourTooltipElement) {
         favourTooltipElement.style.opacity = '0';
         favourTooltipElement.style.visibility = 'hidden';
+    }
+}
+
+/**
+ * 日替わりチャレンジ情報ポップアップを非表示にする。
+ */
+export function hideDailyChallengeTooltip() {
+    if (dailyChallengeTooltipElement) {
+        dailyChallengeTooltipElement.style.opacity = '0';
+        dailyChallengeTooltipElement.style.visibility = 'hidden';
     }
 }
 
@@ -584,15 +642,15 @@ export function toggleCoinDisplay() {
  * @param {object} [currentArea=null] - 現在の地形情報。
  * @param {boolean} [isSelectionPhase=false] - 選択フェーズかどうか。
  * @param {object[]|null} [selectableMonsterPool=null] - 選択可能なモン娘のプール (ボス戦などで使用済みを除外する場合)。
- * @param {number} maxPartySize - ゲームの最大パーティサイズ。
  */
-export async function updateUI(gameData, coinAttributesMap, enemies = [], currentArea = null, isSelectionPhase = false, selectableMonsterPool = null, maxPartySize) {
+export async function updateUI(gameData, coinAttributesMap, enemies = [], currentArea = null, isSelectionPhase = false, selectableMonsterPool = null) {
     const dayDisplay = document.getElementById('days-display'); // idを修正
     const foodDisplay = document.getElementById('food-display');
     const milkDisplay = document.getElementById('milk-display');
     const estimatedMilkGainDisplay = document.getElementById('estimated-milk-gain-display'); // 新しい要素を取得
     const partySizeDisplay = document.getElementById('party-size-display');
     const seedDisplay = document.getElementById('seed-display');
+    const dailyChallengeDisplay = document.getElementById('daily-challenge-display'); // 新しい要素を取得
     const currentAreaDisplay = document.getElementById('current-area-display');
     const currentAreaCoinsDisplay = document.getElementById('current-area-coins-display');
     const favourDisplay = document.getElementById('favour');
@@ -644,6 +702,34 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
 
     if (seedDisplay) seedDisplay.innerText = gameData.currentSeed; // シード値の表示を更新
 
+    // 日替わりチャレンジの表示を更新
+    if (dailyChallengeDisplay) {
+        // 既存のイベントリスナーを削除
+        if (dailyChallengeDisplay._tooltipMouseOverListener) {
+            dailyChallengeDisplay.removeEventListener('mouseover', dailyChallengeDisplay._tooltipMouseOverListener);
+        }
+        if (dailyChallengeDisplay._tooltipMouseOutListener) {
+            dailyChallengeDisplay.removeEventListener('mouseout', dailyChallengeDisplay._tooltipMouseOutListener);
+        }
+
+        if (gameData.isDailyChallengeMode && gameData.dailyChallenges && gameData.dailyChallenges.length > 0) {
+            dailyChallengeDisplay.innerHTML = ` (${gameData.dailyChallenges.map(dc => dc.name).join(' & ')})`;
+            // 新しいイベントリスナーを追加
+            const dailyChallengesData = gameData.dailyChallenges; // クロージャでキャプチャ
+            dailyChallengeDisplay._tooltipMouseOverListener = (event) => {
+                showDailyChallengeTooltip(dailyChallengesData, event);
+            };
+            dailyChallengeDisplay._tooltipMouseOutListener = () => {
+                hideDailyChallengeTooltip();
+            };
+            dailyChallengeDisplay.addEventListener('mouseover', dailyChallengeDisplay._tooltipMouseOverListener);
+            dailyChallengeDisplay.addEventListener('mouseout', dailyChallengeDisplay._tooltipMouseOutListener);
+        } else {
+            dailyChallengeDisplay.innerHTML = '';
+        }
+    }
+
+
     if (currentAreaDisplay) currentAreaDisplay.innerText = gameData.currentArea ? gameData.currentArea.name : '未選択';
     if (currentAreaCoinsDisplay) {
         if (gameData.currentArea) {
@@ -681,7 +767,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
 
     if (partyList) {
         partyList.innerHTML = '';
-        const displayFixedSlots = maxPartySize; // UI表示で常に確保する枠の数
+        const displayFixedSlots = 1; // UI表示で常に確保する枠の数
 
         // 画像パスが設定されるまで待機（setImagePathsが呼ばれるまで）
         if (Object.keys(imagePaths).length === 0) {
@@ -702,7 +788,7 @@ export async function updateUI(gameData, coinAttributesMap, enemies = [], curren
             li.addEventListener('dragover', handleDragOver);
             li.addEventListener('dragleave', handleDragLeave);
             // handleDrop に gameData とその他のパラメータを渡す
-            li.addEventListener('drop', (e) => handleDrop(e, gameData, coinAttributesMap, enemies, currentArea, isSelectionPhase, selectableMonsterPool, maxPartySize));
+            li.addEventListener('drop', (e) => handleDrop(e, gameData, coinAttributesMap, enemies, currentArea, isSelectionPhase, selectableMonsterPool));
             li.addEventListener('dragend', handleDragEnd);
 
             // マウスイベントリスナーを追加
@@ -975,6 +1061,7 @@ export function waitForButtonClick() {
                 hideCoinTooltip();
                 hideLifeTooltip();
                 hideFavourTooltip();
+                hideDailyChallengeTooltip(); // 日替わりチャレンジツールチップも非表示にする
                 actionArea.removeEventListener('click', listener);
                 hideActionAreaWrapper(); // ボタンがクリックされたらサブウィンドウを閉じる
                 resolve(button.dataset.value);
@@ -1160,9 +1247,8 @@ function handleDragLeave(event) {
  * @param {object} currentArea - 現在の地形情報。
  * @param {boolean} isSelectionPhase - 選択フェーズかどうか。
  * @param {object[]|null} selectableMonsterPool - 選択可能なモン娘のプール。
- * @param {number} maxPartySize - ゲームの最大パーティサイズ。
  */
-function handleDrop(event, gameData, coinAttributesMap, enemies, currentArea, isSelectionPhase, selectableMonsterPool, maxPartySize) {
+function handleDrop(event, gameData, coinAttributesMap, enemies, currentArea, isSelectionPhase, selectableMonsterPool) {
     event.preventDefault();
     // closest を使用して、イベントターゲットが li.monster-card または .empty-slot の子要素であっても親を検出する
     const targetItem = event.target.closest('.monster-card, .empty-slot');
@@ -1187,7 +1273,7 @@ function handleDrop(event, gameData, coinAttributesMap, enemies, currentArea, is
         gameData.party.splice(toIndex, 0, movedMonster);
 
         // updateUIを呼び出してUI全体を再描画し、状態を反映させる
-        updateUI(gameData, coinAttributesMap, enemies, currentArea, isSelectionPhase, selectableMonsterPool, maxPartySize);
+        updateUI(gameData, coinAttributesMap, enemies, currentArea, isSelectionPhase, selectableMonsterPool);
     }
 }
 

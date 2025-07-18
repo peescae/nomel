@@ -44,6 +44,19 @@ export class Monster {
 }
 
 /**
+ * 指定された名前の日替わりチャレンジが現在有効かどうかを判定します。
+ * @param {string} challengeName - 検索するチャレンジの名前。
+ * @returns {boolean} 指定されたチャレンジが存在すれば true、そうでなければ false。
+ */
+function isDailyChallengeActive(challengeName) {
+    // game.dailyChallenges 配列が存在し、かつ空でないことを確認
+    if (window.game.isDailyChallengeMode && window.game.dailyChallenges && window.game.dailyChallenges.length > 0) {
+        return window.game.dailyChallenges.some(challenge => challenge.name === challengeName);
+    }
+    return false; // 配列が存在しないか空の場合は false を返す
+}
+
+/**
  * 重複しないランダムなモン娘を生成する。
  * @param {object[]} game - ゲームの状態を管理するオブジェクト。
  * @param {number} count - 生成するモン娘の数。
@@ -69,7 +82,17 @@ export function getUniqueRandomMonsters(game, count, templatesPool, useWeighting
 
     // 硬貨枚数に応じた重み付けマップ
     let weights;
-    if (game.days === 0) {
+    if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士')) {
+        weights = {
+            3: 1,
+            4: 1,
+            5: 1,
+            6: 1,
+            7: 1,
+            8: 1
+        };
+    }
+    else if (game.days === 0) {
         weights = {
             3: 400,
             4: 100,
@@ -165,9 +188,20 @@ export function generateAreaSpecificEnemies(count, currentArea, currentDays, ran
     const maxCoinsAllowed = GAME_CONSTANTS.ENEMY_MIN_COIN_COUNT + Math.floor((currentDays - 1) / GAME_CONSTANTS.ENEMY_COIN_SCALING_DAYS);
 
     // フィルターされたモン娘テンプレートリストを作成 (enemy属性を持たないもののみ)
-    const availableMonsterTemplates = monsterTemplates.filter(template =>
+    let availableMonsterTemplates = monsterTemplates.filter(template =>
         template.coins.length <= maxCoinsAllowed && !template.coins.includes('enemy')
     );
+
+    // 日替わりチャレンジによるフィルタリング
+    if (isDailyChallengeActive('廃刀令')) {
+        availableMonsterTemplates = availableMonsterTemplates.filter(m => !m.coins.includes('iron') && !m.coins.includes('bow'));
+    }
+    else if (isDailyChallengeActive('渇水')) {
+        availableMonsterTemplates = availableMonsterTemplates.filter(m => !m.coins.includes('water') && !m.coins.includes('snow') && !m.coins.includes('fishing'));
+    }
+    else if (isDailyChallengeActive('大原動機')) {
+        availableMonsterTemplates = availableMonsterTemplates.filter(m => !m.coins.includes('forest'));
+    }
 
     const compatibleMonsters = [];
     const incompatibleMonsters = [];
@@ -185,14 +219,15 @@ export function generateAreaSpecificEnemies(count, currentArea, currentDays, ran
     const generatedEnemies = [];
     for (let i = 0; i < count; i++) {
         let selectedTemplate;
-        // 70%の確率で compatible なモン娘を選ぶ
         if (random() < 0.7 && compatibleMonsters.length > 0) {
+            // 70%の確率で compatible なモン娘を選ぶ
             selectedTemplate = compatibleMonsters[Math.floor(random() * compatibleMonsters.length)];
         } else {
             // compatibleなモン娘がいない場合、または30%の確率でincompatibleなモン娘を選ぶ場合
             // フィルターされた全体のリストから選ぶ
             selectedTemplate = availableMonsterTemplates[Math.floor(random() * availableMonsterTemplates.length)];
         }
+
         // talker属性をランダムに選択してMonsterインスタンスに渡す
         const chosenTalker = selectedTemplate.talker && selectedTemplate.talker.length > 0
             ? selectedTemplate.talker[Math.floor(random() * selectedTemplate.talker.length)]
@@ -200,7 +235,9 @@ export function generateAreaSpecificEnemies(count, currentArea, currentDays, ran
         const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
 
         if (currentDays > GAME_CONSTANTS.BOSS_DAYS) {
-            const maxAdditionalCoins = Math.floor((currentDays - GAME_CONSTANTS.BOSS_DAYS) / 2);
+            let maxAdditionalCoins = currentDays - GAME_CONSTANTS.BOSS_DAYS + 1;
+            if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor(maxAdditionalCoins / 2);
+            
             const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
 
             for (let j = 0; j < numAdditionalCoins; j++) {
@@ -295,7 +332,9 @@ export function generateSpecialRaidEnemies(count, currentDays, random) {
         const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
 
         if (currentDays > GAME_CONSTANTS.BOSS_DAYS) {
-            const maxAdditionalCoins = Math.floor((currentDays - GAME_CONSTANTS.BOSS_DAYS) / 2);
+            let maxAdditionalCoins = currentDays - GAME_CONSTANTS.BOSS_DAYS + 1;
+            if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor(maxAdditionalCoins / 2);
+            
             const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
 
             for (let j = 0; j < numAdditionalCoins; j++) {

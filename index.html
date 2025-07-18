@@ -48,7 +48,7 @@
                         </div>
 
                         <div id="seed-info-area">
-                            <p>使用中のシード値: <span id="seed-display"></span></p>
+                            <p>使用中のシード値: <span id="seed-display"></span> <span id="daily-challenge-display"></span></p>
                         </div>
                     </div>
                 </div>
@@ -78,6 +78,7 @@
                         <input type="text" id="seed-input" placeholder="例: myadventure123">
                     </div>
                     <button id="start-game-button" class="action-button">ゲーム開始</button>
+                    <button id="start-daily-challenge-button" class="action-button">日替わり</button>
                 </div>
             </div>
 
@@ -113,7 +114,7 @@
             <!-- 吹き出しの追加 -->
             <div id="homunculus-speech-bubble" class="speech-bubble">
                 ゲームの解説が聞きたいときは<br>
-                僕をクリックしてね！
+                僕をダブルクリックしてね！
             </div>
             <img id="left-alchemy-image" src="" alt="錬金術師" class="alchemy-image" style="display: none;">
             <img id="homunculus-image" src="" alt="ホムンクルス" title="ダブルクリックしてヘルプを表示">
@@ -238,6 +239,14 @@
                         <li>少数精鋭で攻めるか、人海戦術で攻めるかはおじさん次第だよ！</li>
                     </ul>
 
+                    <h4>日替わりチャレンジ</h4>
+                    <ul>
+                        <li>ランダムに選ばれた3つのチャレンジでゲームを攻略しよう！</li>
+                        <li>チャレンジ内容は日替わりで更新されるよ。</li>
+                        <li>乱数シード値はその日の日付で固定されるよ。</li>
+                        <li>絶対クリアできないような詰んでるシードがあるかもしれないけど許してね！</li>
+                    </ul>
+
                     <h4>利用素材</h4>
                     <ul>
                         <li><strong>魔王魂</strong> <a href="https://maou.audio/" target="_blank">https://maou.audio/</a></li>
@@ -275,6 +284,15 @@
                         <li>
                             <strong>2025/07/05 Ver.1.6</strong> モン娘図鑑・ボス図鑑を実装<br>
                             探索メンバー選択時に予想ミルク獲得量を表示
+                        </li>
+                        <li>
+                            <strong>2025/07/18 Ver.2.0</strong> 日替わりチャレンジを実装<br>
+                            新規モン娘追加（ヴァンパイア、ベイコク）<br>
+                            血の硬貨の特殊効果を変更（表の場合、自分の血の硬貨を全て表にする）<br>
+                            祈りとミルクパーティを1日に複数回実行可能に変更<br>
+                            祈りで得られる硬貨の選択肢の数を3→4に変更<br>
+                            神の寵愛で得られる硬貨は、所持している寵愛または仲間の硬貨から選出するように変更<br>
+                            戦闘手当の計算ミスを修正
                         </li>
                     </ul>
                 </div>

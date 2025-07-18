@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         delicacyItem.innerHTML = `
             <p>
             <strong style="color:rgb(255, 174, 0);">珍味名: ${delicacy.name}</strong><br>
-            <strong>探索者:</strong> <span class="coin-attributes">${explorerCoinsHtml}</span><br>
+            <strong>探索者:</strong> <span class="coin-attributes">${explorerCoinsHtml}</span>
             <strong>地形:</strong> <span class="coin-attributes">${areaCoinsHtml}</span>
             </p>
         `;
