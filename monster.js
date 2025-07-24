@@ -234,16 +234,18 @@ export function generateAreaSpecificEnemies(count, currentArea, currentDays, ran
             : 'none'; // talkerが定義されていない場合は'none'
         const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
 
-        if (currentDays > GAME_CONSTANTS.BOSS_DAYS) {
-            let maxAdditionalCoins = currentDays - GAME_CONSTANTS.BOSS_DAYS + 1;
-            if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor(maxAdditionalCoins / 2);
-            
-            const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+        if (!isDailyChallengeActive('均質')) {
+            if (currentDays > GAME_CONSTANTS.BOSS_DAYS) {
+                let maxAdditionalCoins = currentDays - GAME_CONSTANTS.BOSS_DAYS + 1;
+                if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor(maxAdditionalCoins / 2);
+                
+                const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
 
-            for (let j = 0; j < numAdditionalCoins; j++) {
-                if (newEnemy.coinAttributes.length > 0) {
-                    const randomCoin = newEnemy.coinAttributes[Math.floor(random() * newEnemy.coinAttributes.length)];
-                    newEnemy.additionalCoins.push(randomCoin);
+                for (let j = 0; j < numAdditionalCoins; j++) {
+                    if (newEnemy.coinAttributes.length > 0) {
+                        const randomCoin = newEnemy.coinAttributes[Math.floor(random() * newEnemy.coinAttributes.length)];
+                        newEnemy.additionalCoins.push(randomCoin);
+                    }
                 }
             }
         }
@@ -308,11 +310,6 @@ export function generateSpecialRaidEnemies(count, currentDays, random) {
         }
     }
 
-    // 帝国の侵略兵器の場合、敵の数を2倍にする
-    if (enemyName === '帝国の侵略兵器') {
-        count *= 2;
-    }
-
     const enemyTemplates = monsterTemplates.filter(template =>
         template.name.includes(enemyName) && template.coins.length <= maxCoinsAllowed
     );
@@ -331,16 +328,18 @@ export function generateSpecialRaidEnemies(count, currentDays, random) {
             : 'none'; // talkerが定義されていない場合は'none'
         const newEnemy = new Monster(selectedTemplate.name, [...selectedTemplate.coins], selectedTemplate.upkeep, false, chosenTalker);
 
-        if (currentDays > GAME_CONSTANTS.BOSS_DAYS) {
-            let maxAdditionalCoins = currentDays - GAME_CONSTANTS.BOSS_DAYS + 1;
-            if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor(maxAdditionalCoins / 2);
-            
-            const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+        if (!isDailyChallengeActive('均質')) {
+            if (currentDays > GAME_CONSTANTS.BOSS_DAYS) {
+                let maxAdditionalCoins = currentDays - GAME_CONSTANTS.BOSS_DAYS + 1;
+                if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor(maxAdditionalCoins / 2);
+                
+                const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
 
-            for (let j = 0; j < numAdditionalCoins; j++) {
-                if (newEnemy.coinAttributes.length > 0) {
-                    const randomCoin = newEnemy.coinAttributes[Math.floor(random() * newEnemy.coinAttributes.length)];
-                    newEnemy.additionalCoins.push(randomCoin);
+                for (let j = 0; j < numAdditionalCoins; j++) {
+                    if (newEnemy.coinAttributes.length > 0) {
+                        const randomCoin = newEnemy.coinAttributes[Math.floor(random() * newEnemy.coinAttributes.length)];
+                        newEnemy.additionalCoins.push(randomCoin);
+                    }
                 }
             }
         }

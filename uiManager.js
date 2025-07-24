@@ -16,6 +16,7 @@ let coinTooltipElement;    // 硬貨情報ポップアップ用の単一のtoolt
 let lifeTooltipElement;    // 生い立ち情報ポップアップ用の単一のtooltip要素
 let favourTooltipElement;  // 神の寵愛情報ポップアップ用の単一のtooltip要素
 let dailyChallengeTooltipElement; // 日替わりチャレンジ情報ポップアップ用の単一のtooltip要素
+let specialPartyTooltipElement; // 特殊パーティ情報ポップアップ用の単一のtooltip要素 (追加)
 
 let draggedItem = null; // ドラッグ中の要素を保持
 
@@ -135,7 +136,7 @@ function createLifeTooltipElement() {
         lifeTooltipElement.style.cssText = `
             position: absolute;
             background-color: #3b3f47;
-            border: 1px solid #a2ff7e; /* 生い立ちの色 */
+            border: 1px solid #a2ff7e; /* 生い立ちの色に合わせて調整 */
             border-radius: 5px;
             padding: 10px;
             color: #f8f8f2;
@@ -206,6 +207,36 @@ function createDailyChallengeTooltipElement() {
             line-height: 1.5;
         `;
         document.body.appendChild(dailyChallengeTooltipElement);
+    }
+}
+
+/**
+ * 特殊パーティ情報ポップアップ要素を生成する。
+ * 初回のみ呼び出され、bodyにアタッチされる。
+ */
+function createSpecialPartyTooltipElement() {
+    if (!specialPartyTooltipElement) {
+        specialPartyTooltipElement = document.createElement('div');
+        specialPartyTooltipElement.id = 'special-party-tooltip';
+        specialPartyTooltipElement.style.cssText = `
+            position: absolute;
+            background-color: rgba(30, 30, 30, 0.95);
+            color: #f8f8f2;
+            border: 1px solid #ffcb7e; /* 新しい色、例えばオレンジ系 */
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 250px;
+            z-index: 2006; /* 他のツールチップより高いz-index */
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            text-align: left;
+            font-size: 0.9em;
+            line-height: 1.5;
+        `;
+        document.body.appendChild(specialPartyTooltipElement);
     }
 }
 
@@ -403,6 +434,26 @@ export function showDailyChallengeTooltip(dailyChallenges, event) {
 }
 
 /**
+ * 特殊パーティ情報ポップアップを表示する。
+ * @param {object} specialPartyData - 表示対象のspecialPartyオブジェクト。
+ * @param {MouseEvent} event - マウスイベントオブジェクト。
+ */
+export function showSpecialPartyTooltip(specialPartyData, event) {
+    createSpecialPartyTooltipElement();
+    if (!specialPartyTooltipElement) return;
+
+    let tooltipContent = `<h4>${specialPartyData.name} 勢力</h4>`;
+    tooltipContent += `<p><strong>構成メンバー:</strong></p><ul>`;
+    specialPartyData.member.forEach(monsterName => {
+        tooltipContent += `<li>${monsterName}</li>`;
+    });
+    tooltipContent += `</ul>`;
+
+    specialPartyTooltipElement.innerHTML = tooltipContent;
+    positionTooltip(specialPartyTooltipElement, event);
+}
+
+/**
  * モン娘の硬貨情報ポップアップを非表示にする。
  */
 export function hideMonsterTooltip() {
@@ -459,6 +510,16 @@ export function hideDailyChallengeTooltip() {
     if (dailyChallengeTooltipElement) {
         dailyChallengeTooltipElement.style.opacity = '0';
         dailyChallengeTooltipElement.style.visibility = 'hidden';
+    }
+}
+
+/**
+ * 特殊パーティ情報ポップアップを非表示にする。
+ */
+export function hideSpecialPartyTooltip() {
+    if (specialPartyTooltipElement) {
+        specialPartyTooltipElement.style.opacity = '0';
+        specialPartyTooltipElement.style.visibility = 'hidden';
     }
 }
 
@@ -1061,7 +1122,8 @@ export function waitForButtonClick() {
                 hideCoinTooltip();
                 hideLifeTooltip();
                 hideFavourTooltip();
-                hideDailyChallengeTooltip(); // 日替わりチャレンジツールチップも非表示にする
+                hideDailyChallengeTooltip();
+                hideSpecialPartyTooltip();
                 actionArea.removeEventListener('click', listener);
                 hideActionAreaWrapper(); // ボタンがクリックされたらサブウィンドウを閉じる
                 resolve(button.dataset.value);
@@ -1099,7 +1161,7 @@ export function toggleInitialSetupArea(show) {
 
 /**
  * 指定されたボタンデータを元に、アクションエリアにボタンを生成して表示する。
- * @param {Array<Object>} buttons - {id: string, text: string, className?: string, monster?: Monster, area?: AreaType} 形式のボタンデータの配列。
+ * @param {Array<Object>} buttons - {id: string, text: string, className?: string, monster?: Monster, area?: AreaType, specialParty?: object} 形式のボタンデータの配列。
  */
 export function createButtons(buttons) {
     const actionArea = document.getElementById('action-area');
@@ -1124,6 +1186,9 @@ export function createButtons(buttons) {
             // showAreaTooltipはgameDataを必要とするため、window.gameを参照
             button.addEventListener('mouseover', (event) => showAreaTooltip(buttonData.area, event, coinAttributesMap, window.game));
             button.addEventListener('mouseout', hideAreaTooltip);
+        } else if (buttonData.specialParty) { // 新しいspecialPartyタイプ
+            button.addEventListener('mouseover', (event) => showSpecialPartyTooltip(buttonData.specialParty, event));
+            button.addEventListener('mouseout', hideSpecialPartyTooltip);
         }
     });
     showActionAreaWrapper(); // ボタンが生成されたらサブウィンドウを表示

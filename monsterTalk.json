@@ -84,4 +84,28 @@
     , "g101": { "talker": "上品な", "category": "雑談", "text": "どうかしました？"}
     , "g102": { "talker": "上品な", "category": "雑談", "text": "王子様、見つかりますかしら。"}
     , "g103": { "talker": "上品な", "category": "雑談", "text": "お気を付けくださいね。"}
+    , "h1": { "talker": "不愛想な", "category": "起床", "text": "起きろ。"}
+    , "h2": { "talker": "不愛想な", "category": "探索", "text": "行くぞ。"}
+    , "h3": { "talker": "不愛想な", "category": "勝利", "text": "勝った。"}
+    , "h4": { "talker": "不愛想な", "category": "敗北", "text": "負けた。"}
+    , "h5": { "talker": "不愛想な", "category": "食後", "text": "飯だ。"}
+    , "h6": { "talker": "不愛想な", "category": "加入", "text": "仲間だ。"}
+    , "h7": { "talker": "不愛想な", "category": "空腹", "text": "腹減った。"}
+    , "h8": { "talker": "不愛想な", "category": "延期", "text": "おい。"}
+    , "h9": { "talker": "不愛想な", "category": "帝国", "text": "邪魔だ。"}
+    , "h101": { "talker": "不愛想な", "category": "雑談", "text": "なんだ。"}
+    , "h102": { "talker": "不愛想な", "category": "雑談", "text": "どうした。"}
+    , "h103": { "talker": "不愛想な", "category": "雑談", "text": "ミルクよこせ。"}
+    , "i1": { "talker": "粗暴な", "category": "起床", "text": "起きろ！"}
+    , "i2": { "talker": "粗暴な", "category": "探索", "text": "さっさとしろ！"}
+    , "i3": { "talker": "粗暴な", "category": "勝利", "text": "雑魚が！"}
+    , "i4": { "talker": "粗暴な", "category": "敗北", "text": "糞が！。"}
+    , "i5": { "talker": "粗暴な", "category": "食後", "text": "もっとよこせ！"}
+    , "i6": { "talker": "粗暴な", "category": "加入", "text": "おう。"}
+    , "i7": { "talker": "粗暴な", "category": "空腹", "text": "てめえ！"}
+    , "i8": { "talker": "粗暴な", "category": "延期", "text": "ふざけんな！"}
+    , "i9": { "talker": "粗暴な", "category": "帝国", "text": "うっぜえ！"}
+    , "i101": { "talker": "粗暴な", "category": "雑談", "text": "あんだよ？"}
+    , "i102": { "talker": "粗暴な", "category": "雑談", "text": "めんどくせえ。"}
+    , "i103": { "talker": "粗暴な", "category": "雑談", "text": "ミルクよこせよ！"}
 }

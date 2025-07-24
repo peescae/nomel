@@ -1,6 +1,6 @@
 // game.js
 
-import { coinAttributesMap, monsterTemplates, areaTypes, GAME_CONSTANTS, delicacies, FINAL_BOSS_ENCOUNTERS, life, dailyCharange } from './data.js';
+import { coinAttributesMap, monsterTemplates, areaTypes, GAME_CONSTANTS, delicacies, FINAL_BOSS_ENCOUNTERS, life, dailyCharange, specialParty } from './data.js';
 import { Monster, generateAreaSpecificEnemies, generateSpecialRaidEnemies, getUniqueRandomMonsters } from './monster.js';
 import { mulberry32 } from './rng.js';
 import {
@@ -23,7 +23,9 @@ import {
     createButtons,
     getGroupedCoinDisplay,
     showDailyChallengeTooltip,
-    hideDailyChallengeTooltip
+    hideDailyChallengeTooltip,
+    showSpecialPartyTooltip,
+    hideSpecialPartyTooltip
 } from './uiManager.js';
 import { conductFight } from './battle.js';
 import { updateEstimatedFoodGain, calculateEstimatedMilkGain } from './food.js'; // calculateEstimatedMilkGainをインポート
@@ -180,14 +182,89 @@ function selectOfferMonsterTemplates() {
 }
 
 /**
+ * 「覇権争い」チャレンジ時の特別なモン娘加入フェーズを処理する。
+ * specialPartyから3つをランダムに選出し、選択肢として表示する。
+ * 選択肢にはspecialPartyのmemberの1番目のモン娘の画像を表示させ、
+ * マウスオーバーでmemberの名前全てをホバー表示させる。
+ * 選択肢をクリックすると、memberに定義されているモン娘全てを仲間に加える。
+ * そして、仲間加入フェーズを終了する。
+ */
+async function handleHakenArasoiJoin() {
+    displayGuideMessage('覇権争い');
+    clearActionArea();
+
+    const selectedSpecialParties = [];
+    const availableSpecialParties = [...specialParty]; // コピーして使用
+
+    // 3つのユニークなspecialPartyをランダムに選択
+    while (selectedSpecialParties.length < 3 && availableSpecialParties.length > 0) {
+        const randomIndex = Math.floor(random() * availableSpecialParties.length);
+        selectedSpecialParties.push(availableSpecialParties[randomIndex]);
+        availableSpecialParties.splice(randomIndex, 1); // 選択したものを削除
+    }
+
+    const specialButtons = selectedSpecialParties.map(partyEntry => {
+        // specialPartyのmemberの1番目のモン娘の画像を表示させる
+        const firstMonsterName = partyEntry.member[0];
+        const imageUrl = imagePaths[firstMonsterName] || './image/default.png';
+
+        return {
+            id: partyEntry.name, // specialPartyの名前をIDとして使用
+            text: `<img src="${imageUrl}" alt="${firstMonsterName}" class="monster-image">`,
+            className: 'choice-button monster-choice-button',
+            specialParty: partyEntry // ツールチップのためにspecialPartyオブジェクト全体を渡す
+        };
+    });
+
+    createButtons(specialButtons);
+
+    const chosenPartyName = await waitForButtonClick();
+    const chosenSpecialParty = selectedSpecialParties.find(sp => sp.name === chosenPartyName);
+
+    if (chosenSpecialParty) {
+        logMessage(`${chosenSpecialParty.name} の勢力と共に出発するよ！`);
+        // memberに定義されているモン娘全てを仲間に加える
+        for (const monsterName of chosenSpecialParty.member) {
+            const template = monsterTemplates.find(mt => mt.name === monsterName);
+            if (template) {
+                // Monsterインスタンスを作成してパーティに追加
+                // talker属性をランダムに選択
+                const chosenTalker = template.talker && template.talker.length > 0
+                    ? template.talker[Math.floor(random() * template.talker.length)]
+                    : 'none';
+                const newMonster = new Monster(template.name, [...template.coins], template.upkeep, false, chosenTalker);
+                game.party.push(newMonster);
+                logMessage(`<span class="monster-name-color">${newMonster.name}</span> が仲間に加わった！`);
+                showSpeechBubble([newMonster], '加入', random); // 個別の加入メッセージ
+            }
+        }
+        playSfx("加入").catch(e => console.error("効果音の再生に失敗しました:", e));
+    }
+    updateUI(game, coinAttributesMap, [], null, false, null); // UIを更新して表示を反映
+
+    // 仲間加入フェーズを終了
+    displayGuideMessage('出発');
+    createButtons([{ id: 'continue', text: '出発', className: 'action-button' }]);
+    await waitForButtonClick();
+    clearActionArea();
+    updateUI(game, coinAttributesMap, [], null, false, null); // UIを更新して表示を反映
+}
+
+
+/**
  * １：モン娘の加入フェーズ (ゲーム開始時のみ)。
  * プレイヤーは最大数までモン娘を仲間に加えることができる。
  */
 async function offerMonstersToJoin() {
     game.currentPhase = 'joinPhase';
     logMessage(`<br/><div id="game-messages-phase">--- モン娘加入フェーズ ---</div>`);
-    displayGuideMessage('モン娘加入フェーズ1人目');
     clearActionArea(); // サブウィンドウを非表示にするために呼び出す
+
+    // 「覇権争い」チャレンジが有効な場合、特別な加入フェーズを処理
+    if (isDailyChallengeActive('覇権争い')) {
+        await handleHakenArasoiJoin();
+        return; // 特殊加入フェーズが完了したら、通常の加入フェーズはスキップ
+    }
 
     let initialChoices = [];
     // 現在パーティにいない、かつ'enemy'属性を持たない全てのモン娘テンプレート
@@ -320,7 +397,7 @@ async function selectExplorationArea() {
     const shuffledFilteredAreas = [...availableAreas].sort(() => 0.5 - random());
     let numberOfOptions = GAME_CONSTANTS.SELECT_AREA_SIZE;
     if (game.playerLife.name === '冒険家') numberOfOptions = GAME_CONSTANTS.SELECT_AREA_ADVENTURER;
-    if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士') || isDailyChallengeActive('縄張り')) numberOfOptions++;
+    if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士') || isDailyChallengeActive('覇権争い') || isDailyChallengeActive('縄張り')) numberOfOptions++;
     areaChoices.push(...shuffledFilteredAreas.slice(0, numberOfOptions));
 
     clearActionArea(); // このフェーズの開始時にactionAreaをクリア
@@ -639,7 +716,7 @@ async function handleRaid(restingParty, currentArea) {
             updateUI(game, coinAttributesMap, [], game.currentArea, false, null);
         }
 
-        if (recruitableEnemies.length > 0 && !isDailyChallengeActive('新婚旅行') && !isDailyChallengeActive('両手に花') && !isDailyChallengeActive('三銃士')) {
+        if (recruitableEnemies.length > 0 && !isDailyChallengeActive('新婚旅行') && !isDailyChallengeActive('両手に花') && !isDailyChallengeActive('三銃士') && !isDailyChallengeActive('覇権争い')) {
             raidType === 'duel' ? displayGuideMessage('決闘後の勧誘') : displayGuideMessage('ミルクで勧誘');
 
             // uiManagerのcreateButtons関数に渡すボタンデータの配列を構築
@@ -755,8 +832,7 @@ async function handleImperialInvasionRaid(restingParty, currentArea) {
             if (isDailyChallengeActive('新兵器')) {
                 if (game.days > GAME_CONSTANTS.BOSS_DAYS) {
                     let maxAdditionalCoins = game.days - GAME_CONSTANTS.BOSS_DAYS + 1;
-                    if (isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor(maxAdditionalCoins / 2);
-                    else maxAdditionalCoins = Math.floor(maxAdditionalCoins / 4);
+                    maxAdditionalCoins = Math.floor(maxAdditionalCoins / 4);
 
                     const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
 
@@ -935,7 +1011,7 @@ async function startFinalBossBattle() {
         // 残りの2つをランダムに選択（重複なし）
         let numberOfOptions = GAME_CONSTANTS.SELECT_AREA_SIZE;
         if (game.playerLife.name === '冒険家') numberOfOptions = GAME_CONSTANTS.SELECT_AREA_ADVENTURER;
-        if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士') || isDailyChallengeActive('縄張り')) numberOfOptions++;
+        if (isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士') || isDailyChallengeActive('覇権争い') || isDailyChallengeActive('縄張り')) numberOfOptions++;
         while (chosenAreas.length < numberOfOptions && otherEligibleAreas.length > 0) {
             const randomIndex = Math.floor(random() * otherEligibleAreas.length);
             const selectedArea = otherEligibleAreas.splice(randomIndex, 1)[0];
@@ -1000,18 +1076,21 @@ async function startFinalBossBattle() {
                     : 'none';
                 let enemy = new Monster(template.name, [...template.coins], template.upkeep, false, chosenTalker);
 
-                // 追加の硬貨を付与
-                let maxAdditionalCoins = game.days - GAME_CONSTANTS.BOSS_DAYS;
-                if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor((maxAdditionalCoins) / 2);
+                if (!isDailyChallengeActive('均質')) {
+                    // 追加の硬貨を付与
+                    let maxAdditionalCoins = game.days - GAME_CONSTANTS.BOSS_DAYS;
+                    if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor((maxAdditionalCoins) / 2);
 
-                const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+                    const numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
 
-                for (let j = 0; j < numAdditionalCoins; j++) {
-                    if (enemy.coinAttributes.length > 0) {
-                        const randomCoin = enemy.coinAttributes[Math.floor(random() * enemy.coinAttributes.length)];
-                        enemy.additionalCoins.push(randomCoin);
+                    for (let j = 0; j < numAdditionalCoins; j++) {
+                        if (enemy.coinAttributes.length > 0) {
+                            const randomCoin = enemy.coinAttributes[Math.floor(random() * enemy.coinAttributes.length)];
+                            enemy.additionalCoins.push(randomCoin);
+                        }
                     }
                 }
+
                 // 敵リストに追加
                 finalBossEnemies.push(enemy);
             }
@@ -1123,15 +1202,17 @@ async function handleRecruitmentEvent(currentArea) {
         monsterToOffer = getUniqueRandomMonsters(game, 1, potentialTemplates, false, 0, game.coinSizeLimit, random)[0];
     }
 
-    // 追加の硬貨を付与
-    let maxAdditionalCoins = game.days - GAME_CONSTANTS.BOSS_DAYS + 1;
-    if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor((maxAdditionalCoins) / 2);
+    if (!isDailyChallengeActive('均質')) {
+        // 追加の硬貨を付与
+        let maxAdditionalCoins = game.days - GAME_CONSTANTS.BOSS_DAYS + 1;
+        if (!isDailyChallengeActive('巨人')) maxAdditionalCoins = Math.floor((maxAdditionalCoins) / 2);
 
-    let numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
-    for (let j = 0; j < numAdditionalCoins; j++) {
-        if (monsterToOffer.coinAttributes.length > 0) {
-            const randomCoin = monsterToOffer.coinAttributes[Math.floor(random() * monsterToOffer.coinAttributes.length)];
-            monsterToOffer.additionalCoins.push(randomCoin);
+        let numAdditionalCoins = Math.floor(random() * (maxAdditionalCoins + 1));
+        for (let j = 0; j < numAdditionalCoins; j++) {
+            if (monsterToOffer.coinAttributes.length > 0) {
+                const randomCoin = monsterToOffer.coinAttributes[Math.floor(random() * monsterToOffer.coinAttributes.length)];
+                monsterToOffer.additionalCoins.push(randomCoin);
+            }
         }
     }
 
@@ -1238,7 +1319,6 @@ async function handleFavourEvent() {
     const partyCoins = new Set();
     game.party.forEach(monster => {
         monster.coinAttributes.forEach(coinId => partyCoins.add(coinId));
-        monster.additionalCoins.forEach(coinId => partyCoins.add(coinId));
     });
     game.favour.forEach(coinId => partyCoins.add(coinId));
 
@@ -1312,6 +1392,16 @@ async function handleFoodSacrificeEvent() {
             let availableCoins = coinAttributesMap.filter(coin => coin.id !== 'enemy' && coin.id !== 'machine');
             const chosenCoins = [];
 
+            // 味方モン娘が所持している硬貨と、既に神の寵愛で得た硬貨を収集
+            const partyCoins = new Set();
+            game.party.forEach(monster => {
+                monster.coinAttributes.forEach(coinId => partyCoins.add(coinId));
+            });
+            game.favour.forEach(coinId => partyCoins.add(coinId));
+
+            // availableCoinsを更にフィルタリング（味方モン娘達が所持している硬貨、またはプレイヤーが所持している神の寵愛）
+            availableCoins = availableCoins.filter(coin => partyCoins.has(coin.id));
+
             // 日替わりチャレンジのフィルタリング
             if (isDailyChallengeActive('一神教')) {
                 availableCoins = availableCoins.filter(coin => coin.id === game.favour[0]);
@@ -1323,6 +1413,9 @@ async function handleFoodSacrificeEvent() {
                     const selectedCoin = availableCoins[randomIndex];
                     if (!chosenCoins.includes(selectedCoin)) {
                         chosenCoins.push(selectedCoin);
+                    }
+                    else if (availableCoins.length <= chosenCoins.length) {
+                        break;
                     }
                 }
             }
@@ -1435,10 +1528,13 @@ async function conductCamp(expeditionParty, currentArea) {
             if (monsterCoinAttr === 'fishing' && effectiveAreaCoinAttributesForFood.includes('water')) {
                 currentMonsterCoinAttr = 'water'; // 擬似的に「水」として扱う
             }
+            if (monsterCoinAttr === 'bow' && effectiveAreaCoinAttributesForFood.includes('sky')) {
+                currentMonsterCoinAttr = 'sky'; // 擬似的に「空」として扱う
+            }
 
             let matchCount = 0;
             effectiveAreaCoinAttributesForFood.forEach(areaCoinAttr => {
-                if (areaCoinAttr === currentMonsterCoinAttr) {
+                if (areaCoinAttr === currentMonsterCoinAttr || currentMonsterCoinAttr === 'enemy') {
                     matchCount++;
                 }
             });
@@ -1504,7 +1600,7 @@ async function conductCamp(expeditionParty, currentArea) {
     }
 
     // 仲間の人数分のミルクを消費して仲間全員に追加の硬貨を与えるイベントを発生させる。
-    if (!isDailyChallengeActive('禁酒法')) {
+    if (!isDailyChallengeActive('禁酒法') && !isDailyChallengeActive('均質')) {
         await handleMilkPartyEvent();
     }
 
@@ -1629,7 +1725,10 @@ async function event(partyList, currentArea) {
     if (isDailyChallengeActive('無信仰') && eventType === 'favour') {
         eventType = 'none';
     }
-    if ((isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士')) && (eventType === 'sister' || eventType === 'recruit')) {
+    if (isDailyChallengeActive('高地人') && eventType === 'sister') {
+        eventType = 'none';
+    }
+    if ((isDailyChallengeActive('新婚旅行') || isDailyChallengeActive('両手に花') || isDailyChallengeActive('三銃士') || isDailyChallengeActive('覇権争い')) && (eventType === 'sister' || eventType === 'recruit')) {
         eventType = 'none';
     }
 
@@ -1906,6 +2005,8 @@ async function initializeGame(isDailyChallenge, seed) {
     console.log("選択された生い立ち:", game.playerLife);
 
     game.food = GAME_CONSTANTS.INITIAL_FOOD; // 初期食料
+    if (isDailyChallengeActive('覇権争い')) game.food = game.food * 2;
+
     game.milk = GAME_CONSTANTS.INITIAL_MILK; // 初期ミルク
     game.days = 0;
     game.party = [];

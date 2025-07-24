@@ -27,10 +27,13 @@ export function updateEstimatedFoodGain(game, expeditionParty, currentArea) {
                 if (monsterCoinAttr === 'fishing' && effectiveAreaCoinAttributesForFood.includes('water')) {
                     currentMonsterCoinAttr = 'water'; // 擬似的に「水」として扱う
                 }
+                if (monsterCoinAttr === 'bow' && effectiveAreaCoinAttributesForFood.includes('sky')) {
+                    currentMonsterCoinAttr = 'sky'; // 擬似的に「空」として扱う
+                }
 
                 let matchCount = 0;
                 effectiveAreaCoinAttributesForFood.forEach(areaCoinAttr => {
-                    if (areaCoinAttr === currentMonsterCoinAttr) {
+                    if (areaCoinAttr === currentMonsterCoinAttr || currentMonsterCoinAttr === 'enemy') {
                         matchCount++;
                     }
                 });
@@ -65,7 +68,7 @@ export function calculateEstimatedMilkGain(game, expeditionParty, currentArea) {
                 // 探索エリアの属性と珍味のareaCoinAttributesに共通の属性があるかチェック
                 const areaAttributeMatch = delicacy.areaCoinAttributes.every(attr => currentArea.coinAttributes.includes(attr));
 
-                // 珍味の獲得確率が100%なので、条件が合致すればミルクを獲得とみなす
+                // 条件が合致すればミルクを獲得とみなす
                 if (monsterAttributeMatch && areaAttributeMatch) {
                     estimatedMilkGained += delicacy.milkConversion;
                     break;
